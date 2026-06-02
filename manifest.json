@@ -1,0 +1,40 @@
+{
+  "name": "Planificateur de repas",
+  "short_name": "Repas",
+  "description": "Planifiez vos repas de la semaine et générez votre liste de courses",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f4f0",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Ma semaine",
+      "short_name": "Semaine",
+      "url": "./index.html#semaine",
+      "description": "Voir les plats de la semaine"
+    },
+    {
+      "name": "Courses",
+      "short_name": "Courses",
+      "url": "./index.html#courses",
+      "description": "Voir la liste de courses"
+    }
+  ]
+}

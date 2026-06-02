@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<!-- v2.1 -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planificateur de repas</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Repas">
+<link rel="icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh}
+  .app{max-width:700px;margin:0 auto;padding:0 0 4rem}
+  .header{background:#fff;border-bottom:1px solid #e5e3dd;padding:1rem 1.5rem 0;position:sticky;top:0;z-index:10}
+  .header h1{font-size:18px;font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;margin-left:4px;transition:background 0.3s}
+  .sync-dot.ok{background:#27ae60}.sync-dot.err{background:#e74c3c}.sync-dot.loading{background:#f39c12;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .tabs{display:flex}
+  .tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;padding:10px 8px;cursor:pointer;font-size:13px;font-weight:400;color:#888;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;font-family:inherit}
+  .tab.active{border-bottom-color:#1a1a1a;color:#1a1a1a;font-weight:500}
+  .content{padding:1.5rem}
+  button{cursor:pointer;font-family:inherit;font-size:13px;border-radius:8px;transition:all 0.15s}
+  .btn{background:#fff;border:1px solid #ddd;padding:7px 14px;color:#1a1a1a}.btn:hover{background:#f5f4f0}
+  .btn-primary{background:#1a1a1a;border:1px solid #1a1a1a;color:#fff;padding:7px 20px}.btn-primary:hover{background:#333}
+  .btn-icon{background:none;border:none;padding:4px 8px;color:#888}.btn-icon:hover{color:#1a1a1a}
+  .btn-danger{background:none;border:none;padding:4px 8px;color:#c0392b}
+  .btn-confirm{background:none;border:1px solid #c0392b;padding:4px 10px;font-size:12px;color:#c0392b;border-radius:8px}
+  input,select{font-family:inherit;font-size:14px;border:1px solid #ddd;border-radius:8px;padding:7px 10px;color:#1a1a1a;background:#fff;outline:none;transition:border-color 0.15s}
+  input:focus,select:focus{border-color:#888}
+  input[type=number]{-moz-appearance:textfield}
+  .card{background:#fff;border:1px solid #e5e3dd;border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px}
+  .card-form{background:#fff;border:1px solid #bbb;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+  .tag{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
+  .tag-viande-hachee{background:#fdecea;color:#c0392b}.tag-poulet{background:#e8f8f0;color:#1e8449}
+  .tag-poisson{background:#e8f4fd;color:#1a6fa8}.tag-divers{background:#f0f0f0;color:#666}.tag-sandwich{background:#fef9e7;color:#b7770d}
+  .tag-legumes-salades{background:#e9fbe5;color:#2e7d32}.tag-sauce{background:#fff8e1;color:#e65100}.tag-dessert{background:#fce4ec;color:#c2185b}
+  .section-title{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+  .ing-row{display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap;align-items:center}
+  .ing-row input[type=text]{flex:2;min-width:130px}.ing-row input[type=number]{width:62px}.ing-row .unit{width:90px}.ing-row .cat{flex:1;min-width:130px}
+  .recipe-header{display:flex;align-items:center;gap:8px}.recipe-header .name{flex:1;font-weight:500;font-size:15px}
+  .recipe-ings{font-size:13px;color:#888;line-height:1.7;margin-top:8px}
+  .week-item{display:flex;align-items:center;gap:10px;padding:10px 1rem;margin-bottom:6px;border-radius:8px;cursor:pointer;border:1px solid #e5e3dd;background:#fff;transition:all 0.15s;user-select:none}
+  .week-item.selected{background:#f5f4f0;border-color:#ccc}
+  .checkbox{width:20px;height:20px;border-radius:4px;flex-shrink:0;border:1.5px solid #ccc;background:transparent;display:flex;align-items:center;justify-content:center}
+  .checkbox.checked{background:#1a1a1a;border-color:#1a1a1a}.checkbox.checked::after{content:'✓';font-size:12px;color:#fff;font-weight:600}
+  .week-item .wname{flex:1;font-size:14px}.week-item .wingr{font-size:12px;color:#aaa}
+  .mult-btns{display:flex;gap:3px}
+  .mult-btn{width:28px;height:28px;font-size:12px;padding:0;border:1px solid #ddd;background:transparent;color:#888;border-radius:6px}
+  .mult-btn.active{background:#1a1a1a;border-color:#1a1a1a;color:#fff}
+  .shop-summary{background:#f0efeb;border-radius:8px;padding:10px 1rem;margin-bottom:1.25rem}
+  .shop-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+  .shop-meta span{font-size:13px;color:#888}
+  .shop-item{display:flex;align-items:center;gap:10px;padding:9px 1rem;margin-bottom:4px;border-radius:8px;cursor:pointer;border:1px solid #e5e3dd;background:#fff;transition:opacity 0.15s;user-select:none}
+  .shop-item.done{opacity:0.38}
+  .circle-check{width:20px;height:20px;border-radius:50%;flex-shrink:0;border:1.5px solid #ccc;display:flex;align-items:center;justify-content:center}
+  .circle-check.checked{background:#1a1a1a;border-color:#1a1a1a}.circle-check.checked::after{content:'✓';font-size:11px;color:#fff;font-weight:600}
+  .shop-item .sname{flex:1;font-size:14px}.shop-item.done .sname{text-decoration:line-through}.shop-item .sqty{font-size:13px;font-weight:500;color:#888}
+  .empty{text-align:center;padding:3rem 1rem;color:#aaa;font-size:14px}.empty .icon{font-size:36px;display:block;margin-bottom:12px}
+  .card{cursor:pointer;transition:box-shadow 0.15s}
+  .card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.07)}
+  .card.expanded{border-color:#bbb;box-shadow:0 2px 12px rgba(0,0,0,0.09);cursor:default}
+  .recipe-detail{margin-top:12px;padding-top:12px;border-top:1px solid #f0eeea}
+  .detail-ings{list-style:none;margin-bottom:1rem}
+  .detail-ings li{display:flex;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid #f5f4f0;font-size:13px}
+  .detail-ings li:last-child{border-bottom:none}
+  .detail-ings .ing-label{flex:1;color:#1a1a1a}
+  .detail-ings .ing-qty{font-size:12px;color:#999;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .notes-label{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .notes-label .saved-flash{font-size:10px;color:#27ae60;opacity:0;transition:opacity 0.4s;font-weight:400;text-transform:none;letter-spacing:0}
+  .notes-label .saved-flash.show{opacity:1}
+  textarea.recipe-notes{width:100%;min-height:120px;resize:none;overflow:hidden;border:1px solid #e5e3dd;border-radius:8px 8px 0 8px;padding:10px 12px;font-family:inherit;font-size:13px;color:#1a1a1a;background:#fafaf8;line-height:1.6;outline:none;transition:border-color 0.15s}
+  textarea.recipe-notes:focus{border-color:#888;background:#fff}
+  textarea.recipe-notes::placeholder{color:#bbb}
+  .notes-resize-bar{display:flex;justify-content:flex-end;gap:4px;margin-top:2px}
+  .notes-resize-btn{width:32px;height:28px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#666;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:background 0.15s}
+  .notes-resize-btn:active{background:#f0eeea}
+  .form-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:10px;border-top:1px solid #eee;margin-top:4px}
+  .row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+  .progress-bar{height:3px;background:#eee;border-radius:2px;margin-bottom:1rem}
+  .progress-fill{height:100%;background:#1a1a1a;border-radius:2px;transition:width 0.3s}
+  #setup-screen{display:none;position:fixed;inset:0;background:#f5f4f0;z-index:100;overflow-y:auto;padding:2rem 1rem}
+  .setup-box{max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:2rem;border:1px solid #e5e3dd}
+  .setup-box h2{font-size:20px;font-weight:600;margin-bottom:8px}
+  .setup-box p{font-size:14px;color:#666;margin-bottom:1.5rem;line-height:1.6}
+  .step{background:#f8f7f4;border-radius:10px;padding:1rem 1.25rem;margin-bottom:12px;font-size:14px;line-height:1.7}
+  .step strong{display:block;margin-bottom:4px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
+  .step code{background:#eee;padding:1px 6px;border-radius:4px;font-family:monospace;font-size:13px}
+  .step a{color:#1a6fa8}
+  .config-field{margin-bottom:10px}
+  .config-field label{display:block;font-size:12px;font-weight:500;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em}
+  .config-field input{width:100%;font-size:13px}
+  .setup-error{color:#c0392b;font-size:13px;margin-top:8px;display:none}
+  .settings-section{background:#fff;border:1px solid #e5e3dd;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+  .settings-section h3{font-size:14px;font-weight:600;margin-bottom:4px}
+  .settings-section p{font-size:13px;color:#888;margin-bottom:1rem;line-height:1.5}
+  .mode-btn{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;background:#fff;width:100%;margin-bottom:8px;text-align:left;cursor:pointer;transition:all 0.15s}
+  .mode-btn:hover{border-color:#aaa;background:#fafafa}
+  .mode-btn.active{border-color:#1a1a1a;background:#f8f7f4}
+  .mode-btn .mode-icon{font-size:22px;flex-shrink:0}
+  .mode-btn .mode-text .mode-title{font-size:14px;font-weight:500;display:block}
+  .mode-btn .mode-text .mode-desc{font-size:12px;color:#888;display:block;margin-top:2px}
+  .badge-mode{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:6px}
+  .badge-local{background:#e8f4fd;color:#1a6fa8}
+  .badge-firebase{background:#e8f8f0;color:#1e8449}
+  .danger-zone{border-color:#f5c6c6 !important}
+  .danger-zone h3{color:#c0392b}
+  .ai-panel{background:linear-gradient(135deg,#f8f7ff 0%,#f0f8ff 100%);border:1px solid #d0c8f0;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+  .ai-panel h3{font-size:13px;font-weight:600;margin-bottom:10px;color:#5b4fcf;display:flex;align-items:center;gap:6px}
+  .ai-tabs{display:flex;gap:4px;margin-bottom:10px;background:#ede9ff;border-radius:8px;padding:3px}
+  .ai-tab{flex:1;border:none;background:transparent;padding:6px 4px;font-size:12px;font-weight:500;color:#888;border-radius:6px;cursor:pointer;transition:all 0.15s;font-family:inherit}
+  .ai-tab.active{background:#fff;color:#5b4fcf;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+  .ai-input-row{display:flex;gap:6px}
+  .ai-input-row input{flex:1;font-size:13px;border:1px solid #d0c8f0;border-radius:8px;padding:7px 10px;background:#fff;outline:none}
+  .ai-input-row input:focus{border-color:#5b4fcf}
+  .ai-btn{background:#5b4fcf;border:none;color:#fff;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;transition:background 0.15s}
+  .ai-btn:hover{background:#4a3db8}
+  .ai-btn:disabled{background:#b8b0e8;cursor:not-allowed}
+  .ai-result{margin-top:10px;font-size:14px;background:#f4f2ff;border:1.5px solid #b8aef0;border-radius:8px;padding:12px 14px;line-height:1.7;color:#1a1a1a;white-space:pre-wrap;max-height:260px;overflow-y:auto;font-weight:400}
+  .ai-result-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .ai-result-actions .btn{font-size:12px;padding:5px 12px}
+  .ai-result-actions .btn-primary{font-size:12px;padding:5px 12px}
+  .ai-no-key{font-size:12px;color:#e67e22;background:#fef9e7;border:1px solid #f5cba7;border-radius:8px;padding:8px 10px;margin-top:8px}
+  .nutri-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+  .nutri-cell{background:#f8f7f4;border-radius:10px;padding:10px 6px;text-align:center;border:1px solid #ede9e4}
+  .nutri-val{display:block;font-size:16px;font-weight:700;color:#1a1a1a;line-height:1.2}
+  .nutri-unit{font-size:10px;font-weight:400;color:#aaa;margin-left:1px}
+  .nutri-label{display:block;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-top:4px}
+  .nutri-section{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f0eeea}
+  .nutri-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .recipe-ai-existing{background:#f8f7ff;border:1px solid #d0c8f0;border-radius:10px;padding:10px 12px;margin-top:8px}
+  .ai-existing-section{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f0eeea}
+  .ai-existing-header{display:flex;align-items:center;justify-content:space-between}
+</style>
+</head>
+<body>
+
+<div id="pwd-screen" style="display:flex;position:fixed;inset:0;background:#f5f4f0;z-index:200;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:16px;padding:2.5rem 2rem;border:1px solid #e5e3dd;width:100%;max-width:340px;text-align:center">
+    <div style="font-size:36px;margin-bottom:1rem">🔒</div>
+    <h2 style="font-size:18px;font-weight:600;margin-bottom:6px">Accès protégé</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:1.5rem">Entrez le mot de passe pour continuer</p>
+    <input id="pwd-input" type="password" placeholder="Mot de passe" style="width:100%;text-align:center;font-size:18px;letter-spacing:0.2em;margin-bottom:10px;padding:10px 14px;border:1px solid #ddd;border-radius:8px;outline:none;font-family:inherit" onkeydown="if(event.key==='Enter')checkPwd()">
+    <div id="pwd-error" style="color:#c0392b;font-size:12px;min-height:16px;margin-bottom:10px"></div>
+    <button class="btn-primary" style="width:100%;padding:10px" onclick="checkPwd()">Entrer →</button>
+  </div>
+</div>
+
+<div id="install-screen" style="display:none;position:fixed;inset:0;background:#f5f4f0;z-index:190;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:16px;padding:2.5rem 2rem;border:1px solid #e5e3dd;width:100%;max-width:360px;text-align:center">
+    <div style="font-size:48px;margin-bottom:1rem">🍽️</div>
+    <h2 style="font-size:18px;font-weight:600;margin-bottom:6px">Installer l'application</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:1.75rem;line-height:1.6">
+      Installez le planificateur sur votre appareil pour un accès rapide, sans code à chaque fois.
+    </p>
+    <button id="install-btn" onclick="installApp()" style="width:100%;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px">
+      ⬇️ Installer l'application
+    </button>
+    <div id="ios-hint" style="display:none;background:#f0f8ff;border:1px solid #b8d9f0;border-radius:10px;padding:12px;font-size:13px;color:#1a6fa8;margin-bottom:10px;text-align:left;line-height:1.6">
+      Sur iPhone/iPad : appuyez sur <strong>□↑ Partager</strong> puis <strong>« Sur l'écran d'accueil »</strong>
+    </div>
+    <button onclick="skipInstall()" style="width:100%;padding:10px;background:none;border:1px solid #ddd;border-radius:10px;font-size:13px;color:#888;cursor:pointer">
+      Continuer sans installer →
+    </button>
+    <p style="font-size:11px;color:#bbb;margin-top:14px">Une fois installée, aucun code ne sera demandé.</p>
+  </div>
+</div>
+
+<div id="setup-screen" style="display:none;position:fixed;inset:0;background:#f5f4f0;z-index:100;overflow-y:auto;padding:2rem 1rem">
+  <div class="setup-box">
+    <h2>🍽️ Planificateur de repas</h2>
+    <p>Choisissez comment vous souhaitez utiliser l'application :</p>
+
+    <button class="mode-btn" onclick="useLocalMode()" style="margin-bottom:12px">
+      <span class="mode-icon">💾</span>
+      <span class="mode-text">
+        <span class="mode-title">Mode local — sans configuration</span>
+        <span class="mode-desc">Données stockées sur cet appareil uniquement. Idéal pour une utilisation simple.</span>
+      </span>
+    </button>
+
+    <div style="text-align:center;font-size:12px;color:#bbb;margin-bottom:12px">— ou —</div>
+
+    <div style="border:1px solid #e5e3dd;border-radius:12px;padding:1.25rem">
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px">☁️ Synchronisation Firebase <button onclick="document.getElementById('fb-info-modal').style.display='flex'" style="background:#e8f4fd;border:1px solid #b8d9f0;border-radius:50%;width:22px;height:22px;font-size:12px;color:#1a6fa8;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-weight:600;flex-shrink:0" title="Comment configurer Firebase ?">?</button></div>
+      <div style="font-size:13px;color:#888;margin-bottom:1rem;line-height:1.5">Synchronisez sur tous vos appareils via Firebase (gratuit). <a href="https://console.firebase.google.com" target="_blank" style="color:#1a6fa8">console.firebase.google.com</a></div>
+      <div class="step" style="margin-bottom:10px"><strong>Étape 1</strong>Créez un projet Firebase → <code>Firestore Database</code> → définissez les règles comme indiqué dans le guide <code>?</code>.</div>
+      <div class="step" style="margin-bottom:10px"><strong>Étape 2</strong>Ajoutez une app Web <code>&lt;/&gt;</code> et copiez le <code>firebaseConfig</code> ci-dessous.</div>
+      <div class="config-field"><label>apiKey</label><input id="cfg-apiKey" placeholder="AIzaSy..."/></div>
+      <div class="config-field"><label>authDomain</label><input id="cfg-authDomain" placeholder="mon-projet.firebaseapp.com"/></div>
+      <div class="config-field"><label>projectId</label><input id="cfg-projectId" placeholder="mon-projet"/></div>
+      <div id="setup-error" class="setup-error"></div>
+      <div style="margin-top:1rem;display:flex;justify-content:flex-end">
+        <button class="btn-primary" onclick="saveConfig()">Connecter Firebase →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase info modal -->
+<div id="fb-info-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <button onclick="document.getElementById('fb-info-modal').style.display='none'" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;color:#aaa;cursor:pointer;line-height:1">✕</button>
+    <div style="font-size:28px;margin-bottom:10px">☁️</div>
+    <h2 style="font-size:17px;font-weight:600;margin-bottom:6px">Configurer Firebase</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:1.25rem;line-height:1.6">Firebase est un service gratuit de Google qui permet de synchroniser vos données en temps réel sur tous vos appareils.</p>
+    <div style="background:#f8f7f4;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px;font-size:13px;line-height:1.7">
+      <strong style="display:block;margin-bottom:4px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Étape 1 — Créer un projet</strong>
+      Rendez-vous sur <a href="https://console.firebase.google.com" target="_blank" style="color:#1a6fa8">console.firebase.google.com</a> et connectez-vous avec votre compte Google. Cliquez sur <strong>Ajouter un projet</strong>, donnez-lui un nom (ex: "mes-repas"), désactivez Google Analytics si proposé.
+    </div>
+    <div style="background:#f8f7f4;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px;font-size:13px;line-height:1.7">
+      <strong style="display:block;margin-bottom:4px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Étape 2 — Créer la base de données</strong>
+      Dans le menu gauche, cliquez sur <strong>Firestore Database</strong> → <strong>Créer une base de données</strong>. Sélectionnez une région proche (ex: <code style="background:#eee;padding:1px 5px;border-radius:3px">europe-west1</code>).
+    </div>
+    <div style="background:#f8f7f4;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px;font-size:13px;line-height:1.7">
+      <strong style="display:block;margin-bottom:4px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Étape 3 — Définir les règles de sécurité</strong>
+      Dans <strong>Firestore Database</strong> → onglet <strong>Règles</strong>, remplacez tout le contenu par :<br><br>
+      <code style="background:#eee;padding:6px 10px;border-radius:6px;display:block;line-height:1.8;font-size:12px">rules_version = '2';<br>service cloud.firestore {<br>&nbsp;&nbsp;match /databases/{database}/documents {<br>&nbsp;&nbsp;&nbsp;&nbsp;match /{document=**} {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if true;<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;}<br>}</code><br>
+      Puis cliquez sur <strong>Publier</strong>. Ces règles n'expirent pas.
+    </div>
+    <div style="background:#f8f7f4;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px;font-size:13px;line-height:1.7">
+      <strong style="display:block;margin-bottom:4px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Étape 4 — Récupérer les identifiants</strong>
+      Dans les paramètres du projet (⚙️ en haut à gauche) → <strong>Paramètres du projet</strong> → faites défiler jusqu'à <strong>Vos applications</strong>. Cliquez sur <code style="background:#eee;padding:1px 5px;border-radius:3px">&lt;/&gt;</code> pour ajouter une app Web. Copiez les valeurs <code style="background:#eee;padding:1px 5px;border-radius:3px">apiKey</code>, <code style="background:#eee;padding:1px 5px;border-radius:3px">authDomain</code> et <code style="background:#eee;padding:1px 5px;border-radius:3px">projectId</code> dans les champs ci-dessus.
+    </div>
+    <div style="background:#e8f8f0;border:1px solid #b7e5cc;border-radius:10px;padding:10px 14px;font-size:13px;color:#1e6b40">
+      ✅ <strong>Gratuit</strong> — Le plan Spark (gratuit) de Firebase est largement suffisant pour cet usage. Aucune carte bancaire requise.
+    </div>
+    <div style="margin-top:1.25rem;display:flex;justify-content:flex-end">
+      <button class="btn-primary" onclick="document.getElementById('fb-info-modal').style.display='none'">Compris →</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none">
+  <div class="header">
+    <h1>🍽️ Planificateur de repas <span id="sync-dot" class="sync-dot"></span></h1>
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('recettes')" id="tab-recettes">📖 Recettes</button>
+      <button class="tab" onclick="showTab('semaine')" id="tab-semaine">📅 Ma semaine</button>
+      <button class="tab" onclick="showTab('courses')" id="tab-courses">🛒 Courses</button>
+      <button class="tab" onclick="showTab('extras')" id="tab-extras">➕ Extras</button>
+      <button class="tab" onclick="showTab('settings')" id="tab-settings">⚙️</button>
+    </div>
+  </div>
+  <div class="content">
+    <div id="view-recettes"></div>
+    <div id="view-semaine" style="display:none"></div>
+    <div id="view-courses" style="display:none"></div>
+    <div id="view-extras" style="display:none"></div>
+    <div id="view-settings" style="display:none"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// ── PWA Install ───────────────────────────────────────────────────────────────
+let deferredPrompt = null;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+  || window.navigator.standalone === true; // iOS
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  document.getElementById('install-screen').style.display = 'none';
+  sessionStorage.setItem('mp_auth', '1');
+  function waitAndBoot(retries) {
+    if (typeof firebase !== 'undefined') { bootApp(); }
+    else if (retries > 0) { setTimeout(() => waitAndBoot(retries - 1), 50); }
+    else { useLocalMode(); }
+  }
+  waitAndBoot(20);
+});
+
+function showInstallScreen() {
+  const screen = document.getElementById('install-screen');
+  screen.style.display = 'flex';
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  if (isIos && !deferredPrompt) {
+    document.getElementById('install-btn').style.display = 'none';
+    document.getElementById('ios-hint').style.display = 'block';
+  } else if (!deferredPrompt && !isIos) {
+    // Navigateur desktop sans prompt (déjà installé ou non supporté)
+    skipInstall();
+    return;
+  }
+}
+
+async function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  if (outcome !== 'accepted') {
+    skipInstall();
+  }
+  // si accepté, l'event appinstalled prend le relai
+}
+
+function skipInstall() {
+  document.getElementById('install-screen').style.display = 'none';
+  function waitAndBoot(retries) {
+    if (typeof firebase !== 'undefined') { bootApp(); }
+    else if (retries > 0) { setTimeout(() => waitAndBoot(retries - 1), 50); }
+    else { useLocalMode(); }
+  }
+  waitAndBoot(20);
+}
+
+// ── Default recipes ───────────────────────────────────────────────────────────
+const DEFAULT_RECIPES = [
+  {
+    id:'r1', name:'Spaghetti Bolognaise', tag:'viande-hachee',
+    ingredients:[
+      {id:'i1',name:'Spaghetti',quantity:400,unit:'g',category:'boulangerie'},
+      {id:'i2',name:'Viande hachée bœuf',quantity:500,unit:'g',category:'viande'},
+      {id:'i3',name:'Oignon',quantity:1,unit:'',category:'legumes'},
+      {id:'i4',name:'Ail',quantity:2,unit:'',category:'legumes'},
+      {id:'i5',name:'Lait',quantity:10,unit:'cl',category:'cremerie'},
+      {id:'i6',name:'Carotte',quantity:1,unit:'',category:'legumes'},
+      {id:'i7',name:'Tomates concassées en boîte',quantity:400,unit:'g',category:'epicerie'},
+      {id:'i8',name:'Concentré de tomates',quantity:2,unit:'cs',category:'epicerie'},
+      {id:'i9',name:'Herbes de Provence',quantity:1,unit:'cc',category:'epicerie'},
+      {id:'i10',name:'Huile d\'olive',quantity:null,unit:'',category:'epicerie'},
+      {id:'i11',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'},
+      {id:'i12',name:'Parmesan râpé',quantity:null,unit:'',category:'cremerie'}
+    ]
+  },
+  {
+    id:'r2', name:'Riz Sauce Satay au Poulet', tag:'poulet',
+    ingredients:[
+      {id:'i1',name:'Riz basmati',quantity:300,unit:'g',category:'epicerie'},
+      {id:'i2',name:'Blanc de poulet',quantity:500,unit:'g',category:'viande'},
+      {id:'i3',name:'Beurre de cacahuète',quantity:120,unit:'g',category:'epicerie'},
+      {id:'i4',name:'Sauce soja',quantity:2,unit:'cs',category:'epicerie'},
+      {id:'i5',name:'Sucre roux ou miel',quantity:1,unit:'cc',category:'epicerie'},
+      {id:'i6',name:'Jus de citron vert',quantity:1,unit:'cc',category:'legumes'},
+      {id:'i7',name:'Oignon',quantity:1,unit:'',category:'legumes'},
+      {id:'i8',name:'Ail',quantity:1,unit:'',category:'legumes'},
+      {id:'i9',name:'Lait de coco',quantity:500,unit:'ml',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r3', name:'Bowl Riz & Saumon', tag:'poisson',
+    ingredients:[
+      {id:'i1',name:'Riz à sushi ou jasmin',quantity:350,unit:'g',category:'epicerie'},
+      {id:'i2',name:'Saumon frais',quantity:400,unit:'g',category:'viande'},
+      {id:'i3',name:'Vinaigre de riz',quantity:5,unit:'cs',category:'epicerie'},
+      {id:'i4',name:'Sucre',quantity:2,unit:'cs',category:'epicerie'},
+      {id:'i5',name:'Sauce soja',quantity:5,unit:'cs',category:'epicerie'},
+      {id:'i6',name:'Huile de sésame',quantity:2,unit:'cs',category:'epicerie'},
+      {id:'i7',name:'Miel ou sirop d\'érable',quantity:1,unit:'cs',category:'epicerie'},
+      {id:'i8',name:'Jus de citron',quantity:1,unit:'cc',category:'legumes'},
+      {id:'i9',name:'Avocat',quantity:2,unit:'',category:'legumes'},
+      {id:'i10',name:'Oignons frits (boîte)',quantity:1,unit:'boîte(s)',category:'epicerie'},
+      {id:'i11',name:'Mayonnaise',quantity:3,unit:'cs',category:'epicerie'},
+      {id:'i12',name:'Sriracha',quantity:1,unit:'cc',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r4', name:'Pâtes / Tortellini Carbonara', tag:'divers',
+    ingredients:[
+      {id:'i1',name:'Lardons',quantity:240,unit:'g',category:'viande'},
+      {id:'i2',name:'Oignon',quantity:1,unit:'',category:'legumes'},
+      {id:'i3',name:'Ail',quantity:2,unit:'',category:'legumes'},
+      {id:'i4',name:'Crème liquide',quantity:500,unit:'ml',category:'cremerie'},
+      {id:'i5',name:'Parmesan râpé',quantity:50,unit:'g',category:'cremerie'},
+      {id:'i6',name:'Pâtes ou Tortellini',quantity:500,unit:'g',category:'boulangerie'}
+    ]
+  },
+  {
+    id:'r5', name:'Sandwich Jambon Fromage', tag:'sandwich',
+    ingredients:[
+      {id:'i1',name:'Baguette',quantity:4,unit:'unité(s)',category:'boulangerie'},
+      {id:'i2',name:'Jambon',quantity:2,unit:'',category:'viande'},
+      {id:'i3',name:'Fromage',quantity:null,unit:'',category:'cremerie'},
+      {id:'i4',name:'Beurre',quantity:null,unit:'',category:'cremerie'},
+      {id:'i5',name:'Moutarde',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r6', name:'Fajitas Viande Hachée', tag:'viande-hachee',
+    ingredients:[
+      {id:'i1',name:'Viande hachée bœuf',quantity:500,unit:'g',category:'viande'},
+      {id:'i2',name:'Oignon',quantity:2,unit:'',category:'legumes'},
+      {id:'i3',name:'Poivron rouge',quantity:1,unit:'',category:'legumes'},
+      {id:'i4',name:'Poivron vert',quantity:1,unit:'',category:'legumes'},
+      {id:'i5',name:'Maïs',quantity:200,unit:'g',category:'epicerie'},
+      {id:'i6',name:'Sauce tomate',quantity:400,unit:'g',category:'epicerie'},
+      {id:'i7',name:'Ail',quantity:3,unit:'',category:'legumes'},
+      {id:'i8',name:'Huile d\'olive',quantity:1,unit:'cs',category:'epicerie'},
+      {id:'i9',name:'Paprika',quantity:1,unit:'cc',category:'epicerie'},
+      {id:'i10',name:'Cumin',quantity:1,unit:'cc',category:'epicerie'},
+      {id:'i11',name:'Origan',quantity:1,unit:'cc',category:'epicerie'},
+      {id:'i12',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'},
+      {id:'i13',name:'Fromage blanc',quantity:1,unit:'',category:'cremerie'},
+      {id:'i14',name:'Tortillas de blé',quantity:12,unit:'',category:'boulangerie'},
+      {id:'i15',name:'Avocat (guacamole)',quantity:3,unit:'',category:'legumes'},
+      {id:'i16',name:'Citron vert',quantity:1,unit:'',category:'legumes'},
+      {id:'i17',name:'Tomate',quantity:1,unit:'',category:'legumes'}
+    ]
+  },
+  {
+    id:'r7', name:'Riz au Poulet Curry', tag:'poulet',
+    ingredients:[
+      {id:'i1',name:'Riz basmati',quantity:300,unit:'g',category:'epicerie'},
+      {id:'i2',name:'Blancs de poulet',quantity:500,unit:'g',category:'viande'},
+      {id:'i3',name:'Poivron rouge',quantity:1,unit:'',category:'legumes'},
+      {id:'i4',name:'Oignon',quantity:1,unit:'',category:'legumes'},
+      {id:'i5',name:'Ail',quantity:2,unit:'',category:'legumes'},
+      {id:'i6',name:'Lait de coco',quantity:500,unit:'ml',category:'epicerie'},
+      {id:'i7',name:'Curry en poudre',quantity:3,unit:'cs',category:'epicerie'},
+      {id:'i8',name:'Curcuma',quantity:1,unit:'cc',category:'epicerie'},
+      {id:'i9',name:'Paprika',quantity:2,unit:'cc',category:'epicerie'},
+      {id:'i10',name:'Maïzena',quantity:2,unit:'cs',category:'epicerie'},
+      {id:'i11',name:'Huile d\'olive',quantity:1,unit:'cs',category:'epicerie'},
+      {id:'i12',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r8', name:'Pâtes aux Sardines & Citron', tag:'poisson',
+    ingredients:[
+      {id:'i1',name:'Spaghetti ou linguine',quantity:500,unit:'g',category:'boulangerie'},
+      {id:'i2',name:'Sardines à l\'huile (boîte)',quantity:2,unit:'boîte(s)',category:'viande'},
+      {id:'i3',name:'Ail',quantity:2,unit:'',category:'legumes'},
+      {id:'i4',name:'Crème liquide',quantity:500,unit:'ml',category:'cremerie'},
+      {id:'i5',name:'Oignon',quantity:1,unit:'',category:'legumes'},
+      {id:'i6',name:'Citron (zeste + jus)',quantity:2,unit:'',category:'legumes'},
+      {id:'i7',name:'Concentré de tomate',quantity:1,unit:'cs',category:'epicerie'},
+      {id:'i8',name:'Tomates fraîches',quantity:2,unit:'',category:'legumes'},
+      {id:'i9',name:'Câpres',quantity:4,unit:'cs',category:'epicerie'},
+      {id:'i10',name:'Olives',quantity:15,unit:'',category:'epicerie'},
+      {id:'i11',name:'Persil frais',quantity:null,unit:'',category:'legumes'},
+      {id:'i12',name:'Huile d\'olive, sel, poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r9', name:'Jambon Madère', tag:'divers',
+    ingredients:[
+      {id:'i1',name:'Pâtes',quantity:400,unit:'g',category:'boulangerie'},
+      {id:'i2',name:'Jambon blanc (tranches)',quantity:24,unit:'tranche(s)',category:'viande'},
+      {id:'i3',name:'Crème liquide entière',quantity:750,unit:'ml',category:'cremerie'},
+      {id:'i4',name:'Concentré de tomate',quantity:3,unit:'cs',category:'epicerie'},
+      {id:'i5',name:'Vin de Madère',quantity:7,unit:'cs',category:'epicerie'},
+      {id:'i6',name:'Maïzena',quantity:3,unit:'cs',category:'epicerie'},
+      {id:'i7',name:'Beurre',quantity:null,unit:'',category:'cremerie'},
+      {id:'i8',name:'Fromage à gratiner',quantity:null,unit:'',category:'cremerie'},
+      {id:'i9',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r10', name:'Sandwich Thon', tag:'sandwich',
+    ingredients:[
+      {id:'i1',name:'Baguette',quantity:1,unit:'',category:'boulangerie'},
+      {id:'i2',name:'Philadelphia',quantity:200,unit:'g',category:'cremerie'},
+      {id:'i3',name:'Thon en boîte',quantity:400,unit:'g',category:'viande'},
+      {id:'i4',name:'Ciboulette',quantity:null,unit:'',category:'legumes'},
+      {id:'i5',name:'Moutarde',quantity:1,unit:'cs',category:'epicerie'},
+      {id:'i6',name:'Jus de citron',quantity:null,unit:'',category:'legumes'},
+      {id:'i7',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r11', name:'Burger Maison', tag:'viande-hachee',
+    ingredients:[
+      {id:'i1',name:'Pains à burger',quantity:8,unit:'',category:'boulangerie'},
+      {id:'i2',name:'Viande hachée bœuf',quantity:1000,unit:'g',category:'viande'},
+      {id:'i3',name:'Cheddar (tranches)',quantity:8,unit:'tranche(s)',category:'cremerie'},
+      {id:'i4',name:'Oignon',quantity:1,unit:'',category:'legumes'},
+      {id:'i5',name:'Salade iceberg ou roquette',quantity:null,unit:'',category:'legumes'},
+      {id:'i6',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r12', name:'Pâtes Poulet Moutarde', tag:'poulet',
+    ingredients:[
+      {id:'i1',name:'Pâtes complètes',quantity:400,unit:'g',category:'boulangerie'},
+      {id:'i2',name:'Blancs de poulet',quantity:500,unit:'g',category:'viande'},
+      {id:'i3',name:'Crème liquide',quantity:500,unit:'ml',category:'cremerie'},
+      {id:'i4',name:'Moutarde',quantity:5,unit:'cs',category:'epicerie'},
+      {id:'i5',name:'Ail',quantity:null,unit:'',category:'legumes'},
+      {id:'i6',name:'Parmesan',quantity:null,unit:'',category:'cremerie'},
+      {id:'i7',name:'Huile d\'olive',quantity:null,unit:'',category:'epicerie'},
+      {id:'i8',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r13', name:'Pâtes Pesto Rouge & Œufs Durs', tag:'divers',
+    ingredients:[
+      {id:'i1',name:'Spaghetti ou linguine',quantity:500,unit:'g',category:'boulangerie'},
+      {id:'i2',name:'Œufs',quantity:8,unit:'',category:'cremerie'},
+      {id:'i3',name:'Pesto rouge (boîte)',quantity:1,unit:'boîte(s)',category:'epicerie'},
+      {id:'i4',name:'Crème liquide',quantity:500,unit:'ml',category:'cremerie'}
+    ]
+  },
+  {
+    id:'r14', name:'Pâtes au Saumon', tag:'poisson',
+    ingredients:[
+      {id:'i1',name:'Pâtes',quantity:500,unit:'g',category:'boulangerie'},
+      {id:'i2',name:'Saumon',quantity:400,unit:'g',category:'viande'},
+      {id:'i3',name:'Crème liquide',quantity:500,unit:'ml',category:'cremerie'},
+      {id:'i4',name:'Beurre',quantity:50,unit:'g',category:'cremerie'},
+      {id:'i5',name:'Citron',quantity:0.5,unit:'',category:'legumes'},
+      {id:'i6',name:'Parmesan râpé',quantity:null,unit:'',category:'cremerie'},
+      {id:'i7',name:'Persil / ciboulette',quantity:null,unit:'',category:'legumes'},
+      {id:'i8',name:'Poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r15', name:'Lasagne', tag:'viande-hachee',
+    ingredients:[
+      {id:'i1',name:'Viande hachée (bœuf ou mélange)',quantity:1000,unit:'g',category:'viande'},
+      {id:'i2',name:'Oignons',quantity:2,unit:'',category:'legumes'},
+      {id:'i3',name:'Carottes',quantity:2,unit:'',category:'legumes'},
+      {id:'i4',name:'Ail',quantity:3,unit:'',category:'legumes'},
+      {id:'i5',name:'Tomates concassées (boîte)',quantity:800,unit:'g',category:'epicerie'},
+      {id:'i6',name:'Concentré de tomate',quantity:2,unit:'cs',category:'epicerie'},
+      {id:'i7',name:'Vin rouge',quantity:200,unit:'ml',category:'epicerie'},
+      {id:'i8',name:'Eau ou bouillon',quantity:300,unit:'ml',category:'epicerie'},
+      {id:'i9',name:'Huile d\'olive',quantity:null,unit:'',category:'epicerie'},
+      {id:'i10',name:'Sel, poivre, origan, basilic, laurier',quantity:null,unit:'',category:'epicerie'},
+      {id:'i11',name:'Lait (béchamel)',quantity:1,unit:'l',category:'cremerie'},
+      {id:'i12',name:'Beurre (béchamel)',quantity:80,unit:'g',category:'cremerie'},
+      {id:'i13',name:'Farine (béchamel)',quantity:80,unit:'g',category:'boulangerie'},
+      {id:'i14',name:'Noix de muscade',quantity:null,unit:'',category:'epicerie'},
+      {id:'i15',name:'Mozzarella râpée',quantity:300,unit:'g',category:'cremerie'},
+      {id:'i16',name:'Parmesan râpé',quantity:150,unit:'g',category:'cremerie'},
+      {id:'i17',name:'Plaques de lasagne',quantity:300,unit:'g',category:'boulangerie'}
+    ]
+  },
+  {
+    id:'r16', name:'Cordon Bleu Maison + Spätzli', tag:'poulet',
+    ingredients:[
+      {id:'i1',name:'Spätzle',quantity:500,unit:'g',category:'boulangerie'},
+      {id:'i2',name:'Beurre',quantity:50,unit:'g',category:'cremerie'},
+      {id:'i3',name:'Filets de poulet',quantity:400,unit:'g',category:'viande'},
+      {id:'i4',name:'Jambon blanc (tranches)',quantity:4,unit:'tranche(s)',category:'viande'},
+      {id:'i5',name:'Fromage à raclette (tranches)',quantity:8,unit:'tranche(s)',category:'cremerie'},
+      {id:'i6',name:'Farine',quantity:200,unit:'g',category:'boulangerie'},
+      {id:'i7',name:'Œufs',quantity:4,unit:'',category:'cremerie'},
+      {id:'i8',name:'Chapelure',quantity:200,unit:'g',category:'boulangerie'},
+      {id:'i9',name:'Huile d\'olive',quantity:null,unit:'',category:'epicerie'},
+      {id:'i10',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r17', name:'Poulet Aigre-Doux + Riz', tag:'poulet',
+    ingredients:[
+      {id:'i1',name:'Riz basmati',quantity:200,unit:'g',category:'epicerie'},
+      {id:'i2',name:'Blanc de poulet',quantity:600,unit:'g',category:'viande'},
+      {id:'i3',name:'Poivron rouge',quantity:1,unit:'',category:'legumes'},
+      {id:'i4',name:'Poivron vert',quantity:1,unit:'',category:'legumes'},
+      {id:'i5',name:'Carottes',quantity:2,unit:'',category:'legumes'},
+      {id:'i6',name:'Oignon',quantity:1,unit:'',category:'legumes'},
+      {id:'i7',name:'Courgette',quantity:1,unit:'',category:'legumes'},
+      {id:'i8',name:'Ail',quantity:2,unit:'',category:'legumes'},
+      {id:'i9',name:'Huile végétale',quantity:2,unit:'cs',category:'epicerie'},
+      {id:'i10',name:'Ketchup',quantity:180,unit:'ml',category:'epicerie'},
+      {id:'i11',name:'Vinaigre de riz',quantity:4,unit:'cs',category:'epicerie'},
+      {id:'i12',name:'Sucre roux',quantity:5,unit:'cs',category:'epicerie'},
+      {id:'i13',name:'Sauce soja',quantity:4,unit:'cs',category:'epicerie'},
+      {id:'i14',name:'Bouillon de volaille',quantity:300,unit:'ml',category:'epicerie'},
+      {id:'i15',name:'Maïzena',quantity:3,unit:'cs',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r18', name:'Gratin Patate Douce & Lardons + viande aux choix', tag:'divers',
+    ingredients:[
+      {id:'i1',name:'Patates douces épluchées',quantity:340,unit:'g',category:'legumes'},
+      {id:'i2',name:'Pommes de terre épluchées',quantity:340,unit:'g',category:'legumes'},
+      {id:'i3',name:'Ail',quantity:4,unit:'',category:'legumes'},
+      {id:'i4',name:'Oignon',quantity:0.5,unit:'',category:'legumes'},
+      {id:'i5',name:'Lardons fumés',quantity:300,unit:'g',category:'viande'},
+      {id:'i6',name:'Crème entière',quantity:600,unit:'ml',category:'cremerie'},
+      {id:'i7',name:'Noix de muscade',quantity:null,unit:'',category:'epicerie'},
+      {id:'i8',name:'Poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r19', name:'Salade de Pâtes', tag:'legumes-salades',
+    ingredients:[
+      {id:'i1',name:'Pâtes cornettes',quantity:250,unit:'g',category:'boulangerie'},
+      {id:'i2',name:'Cervelas',quantity:2,unit:'',category:'viande'},
+      {id:'i3',name:'Œufs durs',quantity:3,unit:'',category:'cremerie'},
+      {id:'i4',name:'Emmental ou Comté',quantity:100,unit:'g',category:'cremerie'},
+      {id:'i5',name:'Poivron rouge',quantity:0.5,unit:'',category:'legumes'},
+      {id:'i6',name:'Cornichons',quantity:8,unit:'',category:'epicerie'},
+      {id:'i7',name:'Oignon rouge',quantity:1,unit:'',category:'legumes'},
+      {id:'i8',name:'Ciboulette',quantity:0.5,unit:'',category:'legumes'}
+    ]
+  },
+  {
+    id:'r20', name:'Sauce Big Mac', tag:'sauce',
+    ingredients:[
+      {id:'i1',name:'Mayonnaise',quantity:6,unit:'cs',category:'epicerie'},
+      {id:'i2',name:'Ketchup',quantity:2,unit:'cs',category:'epicerie'},
+      {id:'i3',name:'Crème fraîche',quantity:2,unit:'cs',category:'cremerie'},
+      {id:'i4',name:'Jus de citron',quantity:2,unit:'cc',category:'legumes'},
+      {id:'i5',name:'Moutarde américaine jaune',quantity:4,unit:'cs',category:'epicerie'},
+      {id:'i6',name:'Relish (cornichons coupés fin)',quantity:4,unit:'cs',category:'epicerie'},
+      {id:'i7',name:'Oignon en poudre',quantity:2,unit:'cc',category:'epicerie'},
+      {id:'i8',name:'Ail en poudre',quantity:2,unit:'cc',category:'epicerie'},
+      {id:'i9',name:'Paprika',quantity:2,unit:'cc',category:'epicerie'},
+      {id:'i10',name:'Vinaigre',quantity:2,unit:'cc',category:'epicerie'},
+      {id:'i11',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r21', name:'Guacamole Maison', tag:'sauce',
+    ingredients:[
+      {id:'i1',name:'Avocats mûrs',quantity:3,unit:'',category:'legumes'},
+      {id:'i2',name:'Citron vert (jus)',quantity:1,unit:'cs',category:'legumes'},
+      {id:'i3',name:'Tomate (épépinée)',quantity:1,unit:'',category:'legumes'},
+      {id:'i4',name:'Poudre oignon',quantity:1,unit:'cc',category:'legumes'},
+      {id:'i5',name:'Poudre ail',quantity:1,unit:'cc',category:'legumes'},
+      {id:'i6',name:'Sel, poivre',quantity:null,unit:'',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r22', name:'Gâteau Spéculoos (Cheesecake sans cuisson)', tag:'dessert',
+    ingredients:[
+      {id:'i1',name:'Biscuits spéculoos',quantity:300,unit:'g',category:'boulangerie'},
+      {id:'i2',name:'Beurre fondu',quantity:100,unit:'g',category:'cremerie'},
+      {id:'i3',name:'Philadelphia',quantity:350,unit:'g',category:'cremerie'},
+      {id:'i4',name:'Mascarpone',quantity:250,unit:'g',category:'cremerie'},
+      {id:'i5',name:'Crème liquide entière (40%)',quantity:300,unit:'ml',category:'cremerie'},
+      {id:'i6',name:'Pâte de spéculoos',quantity:2,unit:'cs',category:'epicerie'},
+      {id:'i7',name:'Sucre glace',quantity:2,unit:'cs',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r23', name:'Crème Brûlée (8 portions)', tag:'dessert',
+    ingredients:[
+      {id:'i1',name:'Jaunes d\'œufs',quantity:6,unit:'',category:'cremerie'},
+      {id:'i2',name:'Sucre en poudre',quantity:75,unit:'g',category:'epicerie'},
+      {id:'i3',name:'Lait',quantity:5,unit:'cl',category:'cremerie'},
+      {id:'i4',name:'Crème liquide entière',quantity:50,unit:'cl',category:'cremerie'},
+      {id:'i5',name:'Gousses de vanille',quantity:2,unit:'',category:'epicerie'},
+      {id:'i6',name:'Cassonade (caramélisation)',quantity:50,unit:'g',category:'epicerie'}
+    ]
+  },
+  {
+    id:'r24', name:'Gâteau au Citron Léger', tag:'dessert',
+    ingredients:[
+      {id:'i1',name:'Beurre (ou 1 pot d\'huile)',quantity:100,unit:'g',category:'cremerie'},
+      {id:'i2',name:'Sucre (1 pot yaourt)',quantity:1,unit:'',category:'epicerie'},
+      {id:'i3',name:'Farine (3 pots yaourt)',quantity:3,unit:'',category:'boulangerie'},
+      {id:'i4',name:'Levure chimique',quantity:1,unit:'sachet(s)',category:'boulangerie'},
+      {id:'i5',name:'Œufs',quantity:3,unit:'',category:'cremerie'},
+      {id:'i6',name:'Yaourt nature',quantity:1,unit:'',category:'cremerie'},
+      {id:'i7',name:'Citrons non traités',quantity:2,unit:'',category:'legumes'}
+    ]
+  },
+  {
+    id:'m9epf1j', name:'Légume', tag:'legumes-salades',
+    ingredients:[
+      {id:'ymnpx54',name:'Courgettes',quantity:2,unit:'',category:'legumes'},
+      {id:'qeajkt5',name:'Carottes',quantity:4,unit:'',category:'legumes'},
+      {id:'qhkrodl',name:'Fenouil (gros)',quantity:1,unit:'',category:'legumes'}
+    ]
+  }
+];
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const CAT_INGR=[
+  {id:'viande',label:'Viande & poisson',icon:'🥩'},
+  {id:'legumes',label:'Légumes & fruits',icon:'🥦'},
+  {id:'epicerie',label:'Épicerie',icon:'🥫'},
+  {id:'cremerie',label:'Crémerie & œufs',icon:'🧀'},
+  {id:'surgeles',label:'Surgelés',icon:'❄️'},
+  {id:'boulangerie',label:'Boulangerie & pâtes',icon:'🥖'},
+  {id:'autres',label:'Autres',icon:'📦'},
+];
+const TAGS=[
+  {id:'viande-hachee',label:'Viande hachée'},
+  {id:'poulet',label:'Poulet'},
+  {id:'poisson',label:'Poisson'},
+  {id:'divers',label:'Divers'},
+  {id:'sandwich',label:'Sandwich'},
+  {id:'legumes-salades',label:'Légumes & salades'},
+  {id:'sauce',label:'Sauce'},
+  {id:'dessert',label:'Dessert'},
+];
+const UNITS=['','g','kg','ml','l','cl','unité(s)','tranche(s)','boîte(s)','sachet(s)','cs','cc'];
+function genId(){return Math.random().toString(36).slice(2,9)}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let recipes=[], week=[];
+let checked=JSON.parse(localStorage.getItem('mp_checked')||'{}');
+let extraItems=[];
+let pendingDelete=null, editingId=null, showAddForm=false, currentTab='recettes', expandedRecipeId=null;
+let recipeSearch='';
+let recipeAIPanelId=null;
+let nutritionLoadingId=null;
+let db=null;
+let storageMode=localStorage.getItem('mp_storage_mode')||null; // 'local' | 'firebase'
+
+// ── Sync dot ──────────────────────────────────────────────────────────────────
+function setSyncDot(s){
+  const d=document.getElementById('sync-dot');
+  if(!d)return;
+  if(storageMode==='local'){d.className='sync-dot ok';d.title='Mode local';return;}
+  d.className='sync-dot '+s;
+  d.title=s==='ok'?'Firebase synchronisé':s==='err'?'Erreur de sync':'Synchronisation…';
+}
+
+// ── Firebase ──────────────────────────────────────────────────────────────────
+function loadCfg(){try{return JSON.parse(localStorage.getItem('fb_cfg')||'null')}catch{return null}}
+function saveCfg(c){localStorage.setItem('fb_cfg',JSON.stringify(c))}
+
+// ── Local mode ────────────────────────────────────────────────────────────────
+function useLocalMode(){
+  storageMode='local';
+  localStorage.setItem('mp_storage_mode','local');
+  // Load data from localStorage
+  try{recipes=JSON.parse(localStorage.getItem('mp_recipes')||'null')||DEFAULT_RECIPES;}catch{recipes=DEFAULT_RECIPES;}
+  try{week=JSON.parse(localStorage.getItem('mp_week')||'[]');}catch{week=[];}
+  try{extraItems=JSON.parse(localStorage.getItem('mp_extras')||'[]');}catch{extraItems=[];}
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  setSyncDot('ok');
+  render();
+}
+
+function syncLocal(){
+  if(storageMode!=='local')return;
+  localStorage.setItem('mp_recipes',JSON.stringify(recipes));
+  localStorage.setItem('mp_week',JSON.stringify(week));
+}
+
+async function saveConfig(){
+  const apiKey=document.getElementById('cfg-apiKey').value.trim();
+  const authDomain=document.getElementById('cfg-authDomain').value.trim();
+  const projectId=document.getElementById('cfg-projectId').value.trim();
+  const err=document.getElementById('setup-error');
+  if(!apiKey||!authDomain||!projectId){err.style.display='block';err.textContent='❌ Veuillez remplir tous les champs.';return;}
+  const cfg={apiKey,authDomain,projectId};
+  saveCfg(cfg);
+  err.style.display='none';
+  const ok=await initFirebase(cfg);
+  if(!ok){err.style.display='block';err.textContent='❌ Impossible de se connecter. Vérifiez les valeurs saisies.';}
+}
+
+async function initFirebase(cfg){
+  if(typeof firebase==='undefined'){console.error('[initFirebase] Firebase SDK not loaded');return false;}
+  try{
+    if(firebase.apps.length)firebase.apps[0].delete();
+    firebase.initializeApp({...cfg,storageBucket:'',messagingSenderId:'',appId:''});
+    db=firebase.firestore();
+    const snap=await db.collection('planner').doc('data').get();
+    // If first launch, push default recipes
+    if(!snap.exists || !(snap.data().recipes||[]).length){
+      await db.collection('planner').doc('data').set({recipes:DEFAULT_RECIPES,week:[]});
+      await db.collection('planner').doc('extras').set({items:[]});
+    }
+    storageMode='firebase';localStorage.setItem('mp_storage_mode','firebase');
+    document.getElementById('setup-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    startListening();
+    return true;
+  }catch(e){console.error(e);db=null;return false;}
+}
+
+let _syncTimer=null, _extrasTimer=null;
+
+function startListening(){
+  setSyncDot('loading');
+  // Document principal : recettes + semaine
+  db.collection('planner').doc('data').onSnapshot(snap=>{
+    if(snap.exists){const d=snap.data();recipes=d.recipes||[];week=d.week||[];}
+    else{recipes=DEFAULT_RECIPES;week=[];}
+    setSyncDot('ok');
+    render();
+  },err=>{console.error(err);setSyncDot('err');});
+  // Document séparé : extras (évite les conflits d'écrasement)
+  db.collection('planner').doc('extras').onSnapshot(snap=>{
+    if(snap.exists){extraItems=snap.data().items||[];}
+    else{extraItems=[];}
+    render();
+  },err=>{console.error(err);});
+}
+
+function syncToFirestore(){
+  if(storageMode==='local'){syncLocal();return;}
+  if(!db)return;
+  clearTimeout(_syncTimer);
+  _syncTimer=setTimeout(async()=>{
+    setSyncDot('loading');
+    try{await db.collection('planner').doc('data').set({recipes,week});setSyncDot('ok');}
+    catch(e){console.error(e);setSyncDot('err');}
+  },300);
+}
+function saveChecked(){localStorage.setItem('mp_checked',JSON.stringify(checked))}
+function saveExtraItems(){
+  if(storageMode==='local'){localStorage.setItem('mp_extras',JSON.stringify(extraItems));return;}
+  if(!db)return;
+  clearTimeout(_extrasTimer);
+  _extrasTimer=setTimeout(async()=>{
+    try{await db.collection('planner').doc('extras').set({items:extraItems});setSyncDot('ok');}
+    catch(e){console.error(e);setSyncDot('err');}
+  },300);
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showTab(t){
+  currentTab=t;
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.querySelectorAll('[id^="view-"]').forEach(el=>el.style.display='none');
+  document.getElementById('view-'+t).style.display='block';
+  render();
+}
+
+function tagBadge(tag){const t=TAGS.find(x=>x.id===tag)||{label:tag};return `<span class="tag tag-${tag}">${t.label}</span>`;}
+
+// ── Render Recettes ───────────────────────────────────────────────────────────
+function renderRecettes(){
+  const searchEl=document.getElementById('recipe-search');
+  const hadFocus=searchEl&&document.activeElement===searchEl;
+  const selStart=hadFocus?searchEl.selectionStart:0;
+  const selEnd=hadFocus?searchEl.selectionEnd:0;
+
+  const filtered=recipeSearch
+    ?recipes.filter(r=>r.name.toLowerCase().includes(recipeSearch.toLowerCase())||
+        r.ingredients.some(i=>i.name.toLowerCase().includes(recipeSearch.toLowerCase())))
+    :recipes;
+  let html=`<div style="margin-bottom:1rem;position:relative">
+    <input type="text" id="recipe-search" value="${escHtml(recipeSearch)}" placeholder="🔍 Rechercher une recette ou un ingrédient…" style="width:100%;font-size:14px;padding:9px 36px 9px 12px;border:1px solid #ddd;border-radius:10px;background:#fff" oninput="recipeSearch=this.value;renderRecettes()">
+    ${recipeSearch?`<button onclick="recipeSearch='';renderRecettes()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#aaa;padding:2px 6px;line-height:1" title="Effacer">✕</button>`:''}
+  </div>
+  <div class="row-header">
+    <span style="font-size:13px;color:#888">${filtered.length} recette${filtered.length!==1?'s':''}</span>
+    ${!showAddForm&&!editingId?`<button class="btn" onclick="startAdd()">+ Nouvelle recette</button>`:''}
+  </div>`;
+  if(showAddForm&&!editingId)html+=renderForm(null);
+  if(!filtered.length&&!showAddForm)html+=`<div class="empty"><span class="icon">📋</span>${recipeSearch?'Aucune recette trouvée.':'Aucune recette.'}</div>`;
+  filtered.forEach(r=>{
+    if(editingId===r.id){html+=renderForm(r);return;}
+    const isExpanded=expandedRecipeId===r.id;
+    const ingStr=r.ingredients.map(i=>i.name+(i.quantity?` (${i.quantity}${i.unit?' '+i.unit:''})`:'')  ).join(', ');
+    const delBtn=pendingDelete===r.id
+      ?`<button class="btn-confirm" onclick="event.stopPropagation();confirmDel('${r.id}')">Confirmer ?</button>`
+      :`<button class="btn-danger" onclick="event.stopPropagation();requestDel('${r.id}')">🗑</button>`;
+
+    let detailHtml='';
+    if(isExpanded){
+      const ingList=r.ingredients.map(i=>{
+        const qtyStr=i.quantity?`${i.quantity}${i.unit?' '+i.unit:''}`:'';
+        return `<li><span class="ing-label">${escHtml(i.name)}</span>${qtyStr?`<span class="ing-qty">${escHtml(qtyStr)}</span>`:''}</li>`;
+      }).join('');
+
+      // ── Nutrition section ──
+      const nutri=r.nutrition;
+      const hasKey=!!localStorage.getItem('mp_anthropic_key');
+      const isLoadingNutri=nutritionLoadingId===r.id;
+      let nutriHtml='';
+      if(nutri){
+        const pp=nutri.par_portion||nutri; // backward compat
+        const portions=nutri.portions||1;
+        const kcalP=Math.round((pp.kcal||0));
+        const glucP=Math.round((pp.glucides||0));
+        const protP=Math.round((pp.proteines||0));
+        const lipP=Math.round((pp.lipides||0));
+        nutriHtml=`<div class="nutri-grid">
+          <div class="nutri-cell"><span class="nutri-val">${kcalP}</span><span class="nutri-label">kcal</span></div>
+          <div class="nutri-cell"><span class="nutri-val">${glucP}<span class="nutri-unit">g</span></span><span class="nutri-label">glucides</span></div>
+          <div class="nutri-cell"><span class="nutri-val">${protP}<span class="nutri-unit">g</span></span><span class="nutri-label">protéines</span></div>
+          <div class="nutri-cell"><span class="nutri-val">${lipP}<span class="nutri-unit">g</span></span><span class="nutri-label">lipides</span></div>
+        </div>
+        <div style="font-size:11px;color:#bbb;margin-top:6px;display:flex;justify-content:space-between">
+          <span>par portion · ${portions} portion${portions>1?'s':''} estimée${portions>1?'s':''}</span>
+          <span>${kcalP*portions} kcal total</span>
+        </div>`;
+      } else {
+        nutriHtml=`<div style="font-size:12px;color:#bbb;padding:4px 0">${hasKey?'Cliquez sur "Calculer" pour estimer via l’IA.':'Configurez une clé API Anthropic dans Paramètres → IA.'}</div>`;
+      }
+      const nutriSection=`<div class="nutri-section" onclick="event.stopPropagation()">
+        <div class="nutri-section-header">
+          <div class="notes-label" style="margin-bottom:0">🔢 Valeurs nutritionnelles</div>
+          ${hasKey?`<button onclick="event.stopPropagation();calculateNutrition('${r.id}')" class="btn" style="font-size:11px;padding:3px 10px;flex-shrink:0">${isLoadingNutri?'<span style=\"animation:pulse 1s infinite;display:inline-block\">…</span>':nutri?'↺ Recalculer':'✨ Calculer'}</button>`:''}
+        </div>
+        ${nutriHtml}
+      </div>`;
+
+      // ── AI panel for existing recipe ──
+      const isAIOpen=recipeAIPanelId===r.id;
+      const aiExistingSection=`<div class="ai-existing-section" onclick="event.stopPropagation()">
+        <div class="ai-existing-header" style="margin-bottom:${isAIOpen?'8px':'0'}">
+          <div class="notes-label" style="margin-bottom:0">✨ Générer avec l’IA</div>
+          <button onclick="event.stopPropagation();toggleRecipeAI('${r.id}')" class="btn" style="font-size:11px;padding:3px 10px">${isAIOpen?'Fermer ✕':'Ouvrir ↓'}</button>
+        </div>
+        ${isAIOpen?`<div class="recipe-ai-existing">
+          <div style="font-size:12px;color:#666;margin-bottom:8px">Laissez vide pour auto-générer la recette à partir des ingrédients, ou précisez une demande spécifique.</div>
+          <div class="ai-input-row">
+            <input type="text" id="recipe-ai-prompt-${r.id}" placeholder="Ex: version épicée, méthode Thermomix, sans gluten…" style="font-size:13px;border:1px solid #d0c8f0;border-radius:8px;padding:7px 10px;flex:1;outline:none;background:#fff" onkeydown="if(event.key==='Enter')callAIExistingRecipe('${r.id}')">
+            <button class="ai-btn" onclick="event.stopPropagation();callAIExistingRecipe('${r.id}')" id="recipe-ai-btn-${r.id}" ${!hasKey?'disabled title=\"Clé API requise\"':''}>Générer</button>
+          </div>
+          ${!hasKey?'<div class="ai-no-key" style="margin-top:8px;font-size:11px">⚠️ Clé API Anthropic requise dans Paramètres → IA.</div>':''}
+          <div id="recipe-ai-result-${r.id}" style="display:none;margin-top:8px"></div>
+        </div>`:''}
+      </div>`;
+
+      detailHtml=`<div class="recipe-detail">
+        ${r.ingredients.length?`<div class="section-title" style="margin-bottom:6px">Ingrédients</div><ul class="detail-ings">${ingList}</ul>`:''}
+        ${nutriSection}
+        ${aiExistingSection}
+        <div class="notes-label">📝 Recette & notes <span id="flash-${r.id}" class="saved-flash">✓ Enregistré</span></div>
+        <textarea id="notes-${r.id}" class="recipe-notes" placeholder="Écrivez ici les étapes de préparation, astuces, temps de cuisson…" onblur="saveNotes('${r.id}')" onclick="event.stopPropagation()" oninput="autoGrowNotes(this)">${escHtml(r.notes||'')}</textarea>
+        <div class="notes-resize-bar" onclick="event.stopPropagation()">
+          <button class="notes-resize-btn" onclick="resizeNotes('notes-${r.id}',-160)" title="Réduire">−</button>
+          <button class="notes-resize-btn" onclick="resizeNotes('notes-${r.id}',160)" title="Agrandir">+</button>
+        </div>
+      </div>`;
+    }
+
+    html+=`<div class="card ${isExpanded?'expanded':''}" onclick="toggleExpand('${r.id}',event)">
+      <div class="recipe-header">
+        <span class="name">${escHtml(r.name)}</span>${tagBadge(r.tag)}
+        ${r.notes?'<span title="Recette rédigée" style="font-size:14px;color:#27ae60">✏️</span>':''}
+        ${r.nutrition?'<span title="Valeurs nutritionnelles disponibles" style="font-size:13px;color:#888">🔢</span>':''}
+        <button class="btn-icon" onclick="event.stopPropagation();startEdit('${r.id}')">✏️</button>${delBtn}
+      </div>
+      ${!isExpanded&&ingStr?`<div class="recipe-ings">${escHtml(ingStr)}</div>`:''}
+      ${detailHtml}
+    </div>`;
+  });
+  document.getElementById('view-recettes').innerHTML=html;
+  document.querySelectorAll('textarea.recipe-notes').forEach(ta=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});
+  if(hadFocus){const ns=document.getElementById('recipe-search');if(ns){ns.focus();ns.setSelectionRange(selStart,selEnd);}}
+}
+
+function renderForm(r){
+  const isEdit=!!r;
+  const ings=isEdit?r.ingredients:[];
+  const tagOpts=TAGS.map(t=>`<option value="${t.id}" ${(r?.tag||'divers')===t.id?'selected':''}>${t.label}</option>`).join('');
+  let ingRows=ings.map((ing,i)=>ingRow(i,ing)).join('');
+  const ingNames=allIngredientNames();
+  const datalist=`<datalist id="ing-names">${ingNames.map(n=>`<option value="${escHtml(n)}">`).join('')}</datalist>`;
+  return `<div class="card-form" id="recipe-form">
+    ${datalist}
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <input type="text" id="f-name" value="${escHtml(r?.name||'')}" placeholder="Nom du plat" style="flex:2;min-width:160px;font-size:15px;font-weight:500">
+      <select id="f-tag" style="flex:1;min-width:140px">${tagOpts}</select>
+    </div>
+    <div class="ai-panel">
+      <h3>✨ Générer avec l’IA</h3>
+      <div class="ai-tabs">
+        <button class="ai-tab active" id="aitab-plat" onclick="switchAiTab('plat')">🍽️ Plat</button>
+        <button class="ai-tab" id="aitab-ingredients" onclick="switchAiTab('ingredients')">🥦 Ingrédients</button>
+        <button class="ai-tab" id="aitab-recette" onclick="switchAiTab('recette')">📝 Recette</button>
+      </div>
+      <div class="ai-input-row">
+        <input type="text" id="ai-prompt" placeholder="Ex: lasagnes végétariennes pour 4…" onkeydown="if(event.key==='Enter')callAI()">
+        <button class="ai-btn" id="ai-btn" onclick="callAI()">Générer</button>
+      </div>
+      <div id="ai-result" style="display:none"></div>
+    </div>
+    <div class="section-title" style="margin-bottom:8px">Ingrédients</div>
+    <div id="ing-container">${ingRows}<div id="ing-placeholder"></div></div>
+    <button class="btn" onclick="addIngRow()" style="margin-bottom:1rem;margin-top:4px;font-size:13px">+ Ajouter un ingrédient</button>
+    <div style="margin-top:1rem">
+      <div class="notes-label" style="margin-bottom:6px">📝 Recette &amp; notes <span style="font-size:11px;color:#aaa;font-weight:400;text-transform:none;letter-spacing:0">— l’IA "Recette" remplit ce champ automatiquement</span></div>
+      <textarea id="f-notes" class="recipe-notes" placeholder="Étapes de préparation, astuces, temps de cuisson…" oninput="autoGrowNotes(this)" style="min-height:100px">${escHtml(r?.notes||'')}</textarea>
+      <div class="notes-resize-bar">
+        <button class="notes-resize-btn" onclick="resizeNotes('f-notes',-160)" title="Réduire">−</button>
+        <button class="notes-resize-btn" onclick="resizeNotes('f-notes',160)" title="Agrandir">+</button>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="cancelForm()">Annuler</button>
+      <button class="btn-primary" onclick="saveForm('${isEdit?r.id:''}')">Enregistrer</button>
+    </div>
+  </div>`;
+}
+
+function ingRow(i,ing){
+  const catOpts=CAT_INGR.map(c=>`<option value="${c.id}" ${(ing.category||'autres')===c.id?'selected':''}>${c.label}</option>`).join('');
+  const unitOpts=UNITS.map(u=>`<option value="${u}" ${(ing.unit||'')===u?'selected':''}>${u||'—'}</option>`).join('');
+  return `<div class="ing-row" id="ing-${i}">
+    <input type="text" class="ing-name" value="${escHtml(ing.name||'')}" placeholder="Ingrédient" list="ing-names" autocomplete="off" style="flex:2;min-width:130px">
+    <input type="number" class="ing-qty" value="${ing.quantity??''}" placeholder="Qté" style="width:62px" min="0">
+    <select class="unit ing-unit">${unitOpts}</select>
+    <select class="cat ing-cat">${catOpts}</select>
+    <button class="btn-danger" onclick="removeIngRow(${i})">✕</button>
+  </div>`;
+}
+
+function addIngRow(){const c=document.getElementById('ing-container');const n=c.querySelectorAll('.ing-row').length;const d=document.createElement('div');d.innerHTML=ingRow(n,{});c.insertBefore(d.firstChild,document.getElementById('ing-placeholder'));}
+function removeIngRow(i){const el=document.getElementById('ing-'+i);if(el)el.remove();}
+function gatherIngredients(){
+  const rows=document.querySelectorAll('#ing-container .ing-row');const ings=[];
+  rows.forEach(row=>{
+    const name=row.querySelector('.ing-name').value.trim();if(!name)return;
+    const qty=parseFloat(row.querySelector('.ing-qty').value);
+    const unit=row.querySelector('.ing-unit').value;const cat=row.querySelector('.ing-cat').value;
+    ings.push({id:genId(),name,quantity:isNaN(qty)?null:qty,unit,category:cat});
+  });return ings;
+}
+function saveForm(existingId){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){document.getElementById('f-name').focus();return;}
+  const tag=document.getElementById('f-tag').value;const ingredients=gatherIngredients();
+  const notes=(document.getElementById('f-notes')?.value||'').trim();
+  if(existingId){recipes=recipes.map(r=>r.id===existingId?{...r,name,tag,ingredients,notes}:r);editingId=null;}
+  else{recipes.push({id:genId(),name,tag,ingredients,notes});showAddForm=false;}
+  syncToFirestore();render();
+}
+function startAdd(){showAddForm=true;editingId=null;expandedRecipeId=null;render();setTimeout(()=>document.getElementById('f-name')?.focus(),50);}
+function startEdit(id){editingId=id;showAddForm=false;expandedRecipeId=null;render();setTimeout(()=>document.getElementById('f-name')?.focus(),50);}
+function cancelForm(){editingId=null;showAddForm=false;render();}
+function toggleExpand(id,event){if(editingId)return;expandedRecipeId=expandedRecipeId===id?null:id;render();}
+function autoGrowNotes(ta){ta.style.height="auto";ta.style.height=(ta.scrollHeight)+"px";}
+function resizeNotes(id,delta){const ta=document.getElementById(id);if(!ta)return;const next=Math.max(160,ta.offsetHeight+delta);ta.style.height=next+"px";}
+function saveNotes(id){
+  const ta=document.getElementById('notes-'+id);if(!ta)return;
+  const notes=ta.value;
+  recipes=recipes.map(r=>r.id===id?{...r,notes}:r);
+  syncToFirestore();
+  const flash=document.getElementById('flash-'+id);if(flash){flash.classList.add('show');setTimeout(()=>flash.classList.remove('show'),1500);}
+}
+
+// ── AI for existing recipe ────────────────────────────────────────────────────
+function toggleRecipeAI(id){
+  recipeAIPanelId=recipeAIPanelId===id?null:id;
+  renderRecettes();
+  if(recipeAIPanelId===id){
+    setTimeout(()=>document.getElementById('recipe-ai-prompt-'+id)?.focus(),60);
+  }
+}
+
+async function callAIExistingRecipe(id){
+  const key=localStorage.getItem('mp_anthropic_key');
+  const r=recipes.find(x=>x.id===id);if(!r)return;
+  const resultEl=document.getElementById('recipe-ai-result-'+id);
+  const btn=document.getElementById('recipe-ai-btn-'+id);
+  const promptEl=document.getElementById('recipe-ai-prompt-'+id);
+  if(!resultEl||!btn||!promptEl)return;
+  if(!key){resultEl.style.display='block';resultEl.innerHTML='<div class="ai-no-key">⚠️ Clé API Anthropic non configurée — Paramètres → IA.</div>';return;}
+  const customPrompt=promptEl.value.trim();
+  const ingList=r.ingredients.map(i=>`${i.name}${i.quantity?' '+i.quantity+(i.unit?' '+i.unit:''):''}`)  .join(', ');
+  const userContent=customPrompt
+    ?`Recette "${r.name}". Ingrédients : ${ingList}. Demande spécifique : ${customPrompt}`
+    :`Génère la recette complète de "${r.name}". Ingrédients disponibles : ${ingList}`;
+  btn.disabled=true;btn.textContent='…';
+  resultEl.style.display='block';
+  resultEl.innerHTML='<span style="color:#5b4fcf;font-size:13px;display:flex;align-items:center;gap:6px"><span style="animation:pulse 1s infinite;display:inline-block">✨</span> Génération en cours…</span>';
+  const sys='Tu es un chef cuisinier professionnel. Génère une recette structurée avec : PRÉPARATION (étapes numérotées, précises), ASTUCES (2-3 conseils), TEMPS (préparation + cuisson). Commence directement par PRÉPARATION, sans introduction.';
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:sys,messages:[{role:'user',content:userContent}]})
+    });
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    const text=data.content.map(b=>b.text||'').join('').trim();
+    window['_rait_'+id]=text;
+    resultEl.innerHTML=`<div class="ai-result" style="font-size:13px;max-height:300px">${escHtml(text)}</div>
+      <div class="ai-result-actions">
+        <button class="btn-primary" onclick="applyExistingRecipeText('${id}')">✓ Insérer dans les notes</button>
+        <button class="btn" onclick="callAIExistingRecipe('${id}')">↺ Regénérer</button>
+        <button class="btn" onclick="document.getElementById('recipe-ai-result-${id}').style.display='none'">Fermer</button>
+      </div>`;
+  }catch(e){resultEl.innerHTML=`<div class="ai-result" style="color:#c0392b">❌ ${escHtml(e.message)}</div>`;}
+  btn.disabled=false;btn.textContent='Générer';
+}
+
+function applyExistingRecipeText(id){
+  const text=window['_rait_'+id]||'';if(!text)return;
+  const ta=document.getElementById('notes-'+id);if(!ta)return;
+  const existing=ta.value.trim();
+  ta.value=existing?(existing+'\n\n---\n\n'+text):text;
+  autoGrowNotes(ta);
+  document.getElementById('recipe-ai-result-'+id).style.display='none';
+  saveNotes(id);
+  ta.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ── Nutrition calculation ─────────────────────────────────────────────────────
+async function calculateNutrition(id){
+  const key=localStorage.getItem('mp_anthropic_key');
+  if(!key){alert('Clé API Anthropic non configurée. Allez dans Paramètres → IA.');return;}
+  const r=recipes.find(x=>x.id===id);if(!r)return;
+  nutritionLoadingId=id;renderRecettes();
+  const ingList=r.ingredients.map(i=>`${i.name}${i.quantity?' '+i.quantity+(i.unit?' '+i.unit:''):''}`)  .join(', ');
+  const sys='Tu es un nutritionniste expert. Réponds UNIQUEMENT en JSON valide, sans markdown ni backticks. Estime les valeurs nutritionnelles PAR PORTION pour la recette donnée. Format strict : {"portions":N,"par_portion":{"kcal":X,"glucides":X,"proteines":X,"lipides":X}}. Valeurs entières. portions = nombre de parts réaliste pour la recette.';
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:150,system:sys,messages:[{role:'user',content:`Recette: ${r.name}\nIngrédients: ${ingList}`}]})
+    });
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    const text=data.content.map(b=>b.text||'').join('').trim();
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+    recipes=recipes.map(x=>x.id===id?{...x,nutrition:parsed}:x);
+    syncToFirestore();
+  }catch(e){alert('Erreur lors du calcul nutritionnel : '+e.message);}
+  nutritionLoadingId=null;renderRecettes();
+}
+
+function requestDel(id){pendingDelete=id;render();setTimeout(()=>{if(pendingDelete===id){pendingDelete=null;render();}},3000);}
+function confirmDel(id){recipes=recipes.filter(r=>r.id!==id);week=week.filter(w=>w.recipeId!==id);pendingDelete=null;syncToFirestore();render();}
+
+// ── Render Semaine ────────────────────────────────────────────────────────────
+function renderSemaine(){
+  let html=`<div class="row-header" style="margin-bottom:1rem">
+    <span style="font-size:14px;color:#888">${week.length===0?'Sélectionnez vos plats de la semaine':`${week.length} plat${week.length>1?'s':''} sélectionné${week.length>1?'s':''}`}</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn" onclick="pickRandom()" style="font-size:12px;padding:4px 12px" title="Sélection aléatoire : 1 viande hachée, 1 poulet, 1 poisson, 1 divers, 1 légume, 1 sandwich">🎲 Aléatoire</button>
+      ${week.length>0?`<button class="btn" onclick="resetWeek()" style="font-size:12px;padding:4px 12px">↺ Réinitialiser</button>`:''}
+    </div>
+  </div>`;
+  if(!recipes.length){html+=`<div class="empty"><span class="icon">📅</span>Ajoutez d'abord des recettes.</div>`;document.getElementById('view-semaine').innerHTML=html;return;}
+  const grouped={};TAGS.forEach(t=>{grouped[t.id]=[];});
+  recipes.forEach(r=>{(grouped[r.tag]||grouped['divers']).push(r);});
+  TAGS.forEach(t=>{
+    if(!grouped[t.id]?.length)return;
+    html+=`<div style="margin-bottom:1.25rem"><div class="section-title">${t.label}</div>`;
+    grouped[t.id].forEach(r=>{
+      const entry=week.find(w=>w.recipeId===r.id);const sel=!!entry;
+      const multBtns=sel?[1,2,4,6].map(m=>`<button class="mult-btn ${entry.multiplier===m?'active':''}" onclick="event.stopPropagation();setMult('${r.id}',${m})">×${m}</button>`).join(''):'';
+      html+=`<div class="week-item ${sel?'selected':''}" onclick="toggleWeek('${r.id}')">
+        <div class="checkbox ${sel?'checked':''}"></div>
+        <span class="wname" style="font-weight:${sel?'500':'400'}">${escHtml(r.name)}</span>
+        <span class="wingr">${r.ingredients.length} ingr.</span>
+        ${sel?`<div class="mult-btns" onclick="event.stopPropagation()">${multBtns}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById('view-semaine').innerHTML=html;
+}
+function toggleWeek(id){const e=week.find(w=>w.recipeId===id);if(e)week=week.filter(w=>w.recipeId!==id);else week.push({recipeId:id,multiplier:1});syncToFirestore();render();}
+function setMult(id,m){week=week.map(w=>w.recipeId===id?{...w,multiplier:m}:w);syncToFirestore();render();}
+function resetWeek(){week=[];checked={};saveChecked();extraItems=extraItems.map(i=>({...i,checked:false}));saveExtraItems();syncToFirestore();render();}
+function pickRandom(){
+  const cats=['viande-hachee','poulet','poisson','divers','legumes-salades','sandwich'];
+  const prevIds=week.map(w=>w.recipeId);
+  const newWeek=[];
+  cats.forEach(tag=>{
+    let picked;
+    if(tag==='legumes-salades'){
+      // Toujours prendre la recette "Légume"
+      picked=recipes.find(r=>r.id==='m9epf1j')||recipes.find(r=>r.name==='Légume')||recipes.find(r=>r.tag==='legumes-salades');
+    } else {
+      const pool=recipes.filter(r=>r.tag===tag);
+      if(!pool.length)return;
+      const fresh=pool.filter(r=>!prevIds.includes(r.id));
+      const candidates=fresh.length?fresh:pool;
+      picked=candidates[Math.floor(Math.random()*candidates.length)];
+    }
+    if(picked)newWeek.push({recipeId:picked.id,multiplier:1});
+  });
+  week=newWeek;
+  syncToFirestore();render();
+}
+
+// ── Ingredient name normalization (merge oignon/oignons etc.) ────────────────
+function normIngName(name){
+  return name.trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // strip accents
+    .replace(/\s+/g,' ')
+    .replace(/[sx]$/,''); // remove trailing s or x (French plurals)
+}
+function allIngredientNames(){
+  const seen=new Set();const names=[];
+  recipes.forEach(r=>r.ingredients.forEach(i=>{
+    const n=i.name.trim();if(n&&!seen.has(n.toLowerCase())){seen.add(n.toLowerCase());names.push(n);}
+  }));
+  return names.sort((a,b)=>a.localeCompare(b,'fr'));
+}
+
+// ── Render Courses ────────────────────────────────────────────────────────────
+function computeShoppingList(){
+  const res={};CAT_INGR.forEach(c=>{res[c.id]={};});
+  week.forEach(({recipeId,multiplier})=>{
+    const recipe=recipes.find(r=>r.id===recipeId);if(!recipe)return;
+    recipe.ingredients.forEach(ing=>{
+      const catId=ing.category||'autres';if(!res[catId])res[catId]={};
+      const nk=normIngName(ing.name);const uk=ing.unit||'';const key=nk+(uk?'__'+uk:'');
+      if(!res[catId][key])res[catId][key]={displayName:ing.name.trim(),quantity:0,unit:uk,hasQty:false,count:0};
+      const e=res[catId][key];const q=parseFloat(ing.quantity);
+      if(!isNaN(q)&&q>0){e.quantity+=q*multiplier;e.hasQty=true;}else{e.count+=multiplier;}
+    });
+  });return res;
+}
+function renderCourses(){
+  if(!week.length && !extraItems.length){document.getElementById('view-courses').innerHTML=`<div class="empty"><span class="icon">🛒</span>Sélectionnez des plats dans "Ma semaine" ou ajoutez des articles dans "Extras" pour générer la liste de courses.</div>`;return;}
+  const list=computeShoppingList();
+  const selRecipes=week.map(w=>{const r=recipes.find(x=>x.id===w.recipeId);return r?{...r,mult:w.multiplier}:null;}).filter(Boolean);
+  const total=Object.values(list).reduce((s,cat)=>s+Object.keys(cat).length,0)+extraItems.length;
+  const doneCount=Object.values(checked).filter(Boolean).length+extraItems.filter(i=>i.checked).length;
+  const pct=total>0?Math.round(doneCount/total*100):0;
+  let html='';
+  if(selRecipes.length){
+    html+=`<div class="shop-summary"><div style="font-size:13px;font-weight:500;margin-bottom:4px">Menu de la semaine</div>
+    <div style="font-size:13px;color:#888">${selRecipes.map(r=>r.name+(r.mult>1?` ×${r.mult}`:'')).join(', ')}</div></div>`;
+  }
+  html+=`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="shop-meta"><span>${doneCount}/${total} articles cochés</span>
+    <div style="display:flex;gap:6px">
+      ${doneCount>0?`<button class="btn" onclick="clearChecked()" style="font-size:12px;padding:4px 10px">↺ Tout décocher</button>`:''}
+    </div></div>`;
+
+  // Merge extra items into categories
+  const extraByCat={};
+  extraItems.forEach((item,idx)=>{
+    const c=item.category||'autres';
+    if(!extraByCat[c])extraByCat[c]=[];
+    extraByCat[c].push({...item,idx});
+  });
+
+  CAT_INGR.forEach(cat=>{
+    const items=list[cat.id];
+    const extras=extraByCat[cat.id]||[];
+    if((!items||!Object.keys(items).length) && !extras.length)return;
+    html+=`<div style="margin-bottom:1.25rem"><div class="section-title">${cat.icon} ${cat.label}</div>`;
+    if(items){
+      Object.entries(items).forEach(([key,item])=>{
+        const ckey=cat.id+':'+key;const isDone=!!checked[ckey];
+        let qtyStr='';
+        if(item.hasQty&&item.quantity>0){const q=item.quantity%1===0?item.quantity:parseFloat(item.quantity.toFixed(2));qtyStr=`${q}${item.unit?' '+item.unit:''}`;}
+        else if(!item.hasQty&&item.count>1)qtyStr=`×${item.count}`;
+        html+=`<div class="shop-item ${isDone?'done':''}" onclick="toggleCheck(this.dataset.key)" data-key="${escHtml(ckey)}">
+          <div class="circle-check ${isDone?'checked':''}"></div>
+          <span class="sname">${escHtml(item.displayName)}</span>
+          ${qtyStr?`<span class="sqty">${escHtml(qtyStr)}</span>`:''}
+        </div>`;
+      });
+    }
+    extras.forEach(({idx,name,quantity,unit,checked:isDone})=>{
+      let qtyStr='';
+      const q=parseFloat(quantity);
+      if(!isNaN(q)&&q>0)qtyStr=`${q%1===0?q:q.toFixed(2)}${unit?' '+unit:''}`;
+      html+=`<div class="shop-item ${isDone?'done':''}" onclick="toggleExtraCheck(${idx})" style="cursor:pointer">
+        <div class="circle-check ${isDone?'checked':''}"></div>
+        <span class="sname">${escHtml(name)} <span style="font-size:11px;color:#bbb;font-style:italic">extra</span></span>
+        ${qtyStr?`<span class="sqty">${escHtml(qtyStr)}</span>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById('view-courses').innerHTML=html;
+}
+function toggleCheck(k){checked[k]=!checked[k];saveChecked();render();}
+function clearChecked(){checked={};saveChecked();extraItems=extraItems.map(i=>({...i,checked:false}));saveExtraItems();render();}
+
+function render(){
+  if(currentTab==='recettes')renderRecettes();
+  if(currentTab==='semaine')renderSemaine();
+  if(currentTab==='courses')renderCourses();
+  if(currentTab==='extras')renderExtras();
+  if(currentTab==='settings')renderSettings();
+}
+
+// ── Render Settings ────────────────────────────────────────────────────────────
+// ── IA ────────────────────────────────────────────────────────────────────────
+let aiTab='plat';
+function switchAiTab(t){
+  aiTab=t;
+  ['plat','ingredients','recette'].forEach(id=>{
+    const el=document.getElementById('aitab-'+id);
+    if(el)el.className='ai-tab'+(t===id?' active':'');
+  });
+  const input=document.getElementById('ai-prompt');
+  if(!input)return;
+  if(t==='plat')input.placeholder='Ex: un plat rapide avec du poulet…';
+  if(t==='ingredients')input.placeholder='Ex: spaghetti bolognaise pour 4…';
+  if(t==='recette')input.placeholder='Ex: comment préparer des fajitas…';
+  document.getElementById('ai-result').style.display='none';
+}
+
+function closeAIResult(){var el=document.getElementById("ai-result");if(el)el.style.display="none";}
+
+async function callAI(){
+  var key=localStorage.getItem('mp_anthropic_key');
+  var resultEl=document.getElementById('ai-result');
+  var btn=document.getElementById('ai-btn');
+  var prompt=document.getElementById('ai-prompt').value.trim();
+  if(!prompt){document.getElementById('ai-prompt').focus();return;}
+  if(!key){
+    resultEl.style.display='block';
+    resultEl.innerHTML='<div class="ai-no-key">&#9888; Aucune clé API configurée. Allez dans <strong>Paramètres &rarr; IA</strong> pour en ajouter une.</div>';
+    return;
+  }
+  btn.disabled=true;btn.textContent='…';
+  resultEl.style.display='block';
+  resultEl.innerHTML='<span style="color:#5b4fcf;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px"><span style="animation:pulse 1s infinite;display:inline-block">✨</span> Génération en cours…</span>';
+
+  var CATS=CAT_INGR.map(function(c){return c.id;}).join(', ');
+  var UNITS_LIST=UNITS.filter(function(u){return u;}).join(', ');
+  var TAGS_LIST=TAGS.map(function(t){return t.id;}).join(', ');
+
+  var systemPrompt;
+  if(aiTab==='plat'){
+    systemPrompt='Tu es un assistant culinaire. Réponds UNIQUEMENT en JSON valide, sans markdown. Format: {"name":"Nom du plat","tag":"un de: '+TAGS_LIST+'","summary":"Description courte (1 phrase)"}';
+  } else if(aiTab==='ingredients'){
+    systemPrompt='Tu es un assistant culinaire. Réponds UNIQUEMENT en JSON valide, sans markdown. Format: {"name":"Nom du plat","tag":"un de: '+TAGS_LIST+'","ingredients":[{"name":"string","quantity":number_ou_null,"unit":"un de: '+UNITS_LIST+' ou vide","category":"un de: '+CATS+'"}]}. quantity=null si non applicable.';
+  } else {
+    systemPrompt='Tu es un assistant culinaire. Génère une recette complète et structurée avec : les sections PRÉPARATION (étapes numérotées claires), ASTUCES (2-3 conseils pratiques), et TEMPS (préparation + cuisson). Sois précis sur les températures, durées et techniques. Pas d\'introduction ni conclusion, commence directement par PRÉPARATION.';
+  }
+
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:systemPrompt,messages:[{role:'user',content:prompt}]})
+    });
+    var data=await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    var text=data.content.map(function(b){return b.text||'';}).join('').trim();
+
+    var closeBtn='<button class="btn" onclick="closeAIResult()">Fermer</button>';
+
+    if(aiTab==='recette'){
+      window._aiRecetteText=text;
+      var recetteActions='<button class="btn-primary" onclick="applyAIRecette(window._aiRecetteText)">✓ Insérer dans les notes</button>'
+        +'<button class="btn" onclick="callAI()">Regénérer</button>'+closeBtn;
+      resultEl.innerHTML='<div class="ai-result">'+escHtml(text)+'</div><div class="ai-result-actions">'+recetteActions+'</div>';
+    } else {
+      var parsed;
+      try{parsed=JSON.parse(text.replace(/```json|```/g,'').trim());}
+      catch(pe){throw new Error('Réponse invalide du modèle.');}
+      window._aiParsed=parsed;
+
+      if(aiTab==='plat'){
+        var platActions='<button class="btn-primary" onclick="applyAIPlat(window._aiParsed)">Utiliser ce plat</button>'
+          +'<button class="btn" onclick="callAI()">Autre suggestion</button>'+closeBtn;
+        resultEl.innerHTML='<div class="ai-result"><strong>'+escHtml(parsed.name)+'</strong><br>'+escHtml(parsed.summary||'')+'</div><div class="ai-result-actions">'+platActions+'</div>';
+      } else {
+        var ingLines=(parsed.ingredients||[]).map(function(i){
+          return '• '+i.name+(i.quantity?' — '+i.quantity+(i.unit?' '+i.unit:''):'');
+        }).join('\n');
+        var ingActions='<button class="btn-primary" onclick="applyAIIngredients(window._aiParsed)">Remplir le formulaire</button>'+closeBtn;
+        resultEl.innerHTML='<div class="ai-result"><strong>'+escHtml(parsed.name||'')+'</strong><br>'+escHtml(ingLines)+'</div><div class="ai-result-actions">'+ingActions+'</div>';
+      }
+    }
+  }catch(e){
+    resultEl.innerHTML='<div class="ai-result" style="color:#c0392b">&#10060; '+escHtml(e.message)+'</div>';
+  }
+  btn.disabled=false;btn.textContent='Générer';
+}
+
+function applyAIPlat(parsed){
+  const nameEl=document.getElementById('f-name');
+  const tagEl=document.getElementById('f-tag');
+  if(nameEl)nameEl.value=parsed.name||'';
+  if(tagEl&&parsed.tag)[...tagEl.options].forEach(o=>{if(o.value===parsed.tag)o.selected=true;});
+  // Auto-fill the prompt and generate ingredients + recette in one shot
+  const promptEl=document.getElementById('ai-prompt');
+  if(promptEl)promptEl.value=parsed.name||'';
+  callAIFull(parsed.name||'');
+}
+
+async function callAIFull(platName){
+  var key=localStorage.getItem('mp_anthropic_key');
+  var resultEl=document.getElementById('ai-result');
+  var btn=document.getElementById('ai-btn');
+  if(!key){resultEl.style.display='none';return;}
+  btn.disabled=true;btn.textContent='…';
+  resultEl.style.display='block';
+  resultEl.innerHTML='<span style="color:#5b4fcf;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px"><span style="animation:pulse 1s infinite;display:inline-block">✨</span> Génération des ingrédients et de la recette…</span>';
+
+  var CATS=CAT_INGR.map(function(c){return c.id;}).join(', ');
+  var UNITS_LIST=UNITS.filter(function(u){return u;}).join(', ');
+  var TAGS_LIST=TAGS.map(function(t){return t.id;}).join(', ');
+
+  var systemFull='Tu es un assistant culinaire. Réponds UNIQUEMENT en JSON valide, sans markdown ni backticks. Format exact : {"name":"string","tag":"un de: '+TAGS_LIST+'","ingredients":[{"name":"string","quantity":number_ou_null,"unit":"un de: '+UNITS_LIST+' ou vide","category":"un de: '+CATS+'"}],"recette":"PRÉPARATION\n1. ...\n2. ...\n\nASTUCES\n- ...\n\nTEMPS\nPréparation : X min — Cuisson : Y min"}. quantity=null si non applicable.';
+
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:systemFull,messages:[{role:'user',content:platName}]})
+    });
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var text=data.content.map(function(b){return b.text||'';}).join('').trim();
+    var parsed;
+    try{parsed=JSON.parse(text.replace(/```json|```/g,'').trim());}
+    catch(pe){throw new Error('Réponse invalide du modèle.');}
+
+    // Apply name + tag
+    const nameEl=document.getElementById('f-name');
+    const tagEl=document.getElementById('f-tag');
+    if(nameEl&&parsed.name)nameEl.value=parsed.name;
+    if(tagEl&&parsed.tag)[...tagEl.options].forEach(o=>{if(o.value===parsed.tag)o.selected=true;});
+
+    // Apply ingredients
+    const container=document.getElementById('ing-container');
+    if(container){
+      container.querySelectorAll('.ing-row').forEach(el=>el.remove());
+      (parsed.ingredients||[]).forEach((ing,i)=>{
+        const d=document.createElement('div');
+        d.innerHTML=ingRow(i,{name:ing.name,quantity:ing.quantity,unit:ing.unit||'',category:ing.category||'autres'});
+        container.insertBefore(d.firstChild,document.getElementById('ing-placeholder'));
+      });
+    }
+
+    // Apply recette to notes
+    if(parsed.recette){
+      const ta=document.getElementById('f-notes');
+      if(ta){
+        const existing=ta.value.trim();
+        ta.value=existing?(existing+'\n\n---\n\n'+parsed.recette):parsed.recette;
+        autoGrowNotes(ta);
+      }
+    }
+
+    resultEl.style.display='none';
+  }catch(e){
+    resultEl.innerHTML='<div class="ai-result" style="color:#c0392b">&#10060; '+escHtml(e.message)+'</div>';
+  }
+  btn.disabled=false;btn.textContent='Générer';
+}
+
+function applyAIIngredients(parsed){
+  const nameEl=document.getElementById('f-name');
+  const tagEl=document.getElementById('f-tag');
+  if(nameEl&&parsed.name)nameEl.value=parsed.name;
+  if(tagEl&&parsed.tag)[...tagEl.options].forEach(o=>{if(o.value===parsed.tag)o.selected=true;});
+  // Clear existing rows
+  const container=document.getElementById('ing-container');
+  container.querySelectorAll('.ing-row').forEach(el=>el.remove());
+  // Add new rows
+  (parsed.ingredients||[]).forEach((ing,i)=>{
+    const d=document.createElement('div');
+    d.innerHTML=ingRow(i,{name:ing.name,quantity:ing.quantity,unit:ing.unit||'',category:ing.category||'autres'});
+    container.insertBefore(d.firstChild,document.getElementById('ing-placeholder'));
+  });
+  document.getElementById('ai-result').style.display='none';
+}
+
+function applyAIRecette(text){
+  const ta=document.getElementById('f-notes');
+  if(!ta)return;
+  // Append to existing notes, or set if empty
+  const existing=ta.value.trim();
+  ta.value=existing?(existing+'\n\n---\n\n'+text):text;
+  autoGrowNotes(ta);
+  document.getElementById('ai-result').style.display='none';
+  // Scroll to notes field
+  ta.scrollIntoView({behavior:'smooth',block:'nearest'});
+  ta.focus();
+}
+
+function renderSettings(){
+  const isLocal=storageMode==='local';
+  const isFirebase=storageMode==='firebase';
+  const cfg=loadCfg()||{};
+  const modeLabel=isLocal
+    ?'<span class="badge-mode badge-local">Mode local actif</span>'
+    :'<span class="badge-mode badge-firebase">Firebase actif</span>';
+
+  let html=`<div style="margin-bottom:1.5rem">
+    <h2 style="font-size:16px;font-weight:600;margin-bottom:4px">Paramètres ${modeLabel}</h2>
+    <p style="font-size:13px;color:#888">Configurez le mode de stockage de vos données.</p>
+  </div>
+
+  <div class="settings-section">
+    <h3>💾 Mode de stockage</h3>
+    <p>Choisissez comment vos données sont enregistrées.</p>
+    <button class="mode-btn ${isLocal?'active':''}" onclick="switchToLocal()">
+      <span class="mode-icon">💾</span>
+      <span class="mode-text">
+        <span class="mode-title">Local ${isLocal?'✓':''}</span>
+        <span class="mode-desc">Données sur cet appareil uniquement. Pas de compte requis.</span>
+      </span>
+    </button>
+    <button class="mode-btn ${isFirebase?'active':''}" onclick="switchToFirebase()">
+      <span class="mode-icon">☁️</span>
+      <span class="mode-text">
+        <span class="mode-title">Firebase ${isFirebase?'✓':''}</span>
+        <span class="mode-desc">Synchronisation multi-appareils en temps réel.</span>
+      </span>
+    </button>
+  </div>`;
+
+  if(isFirebase){
+    html+=`<div class="settings-section">
+      <h3 style="display:flex;align-items:center;gap:8px">☁️ Configuration Firebase <button onclick="document.getElementById('fb-info-modal').style.display='flex'" style="background:#e8f4fd;border:1px solid #b8d9f0;border-radius:50%;width:22px;height:22px;font-size:12px;color:#1a6fa8;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-weight:600;flex-shrink:0" title="Comment configurer Firebase ?">?</button></h3>
+      <p>Modifiez vos identifiants Firebase.</p>
+      <div class="config-field"><label>apiKey</label><input id="s-apiKey" value="${escHtml(cfg.apiKey||'')}" placeholder="AIzaSy..."/></div>
+      <div class="config-field"><label>authDomain</label><input id="s-authDomain" value="${escHtml(cfg.authDomain||'')}" placeholder="mon-projet.firebaseapp.com"/></div>
+      <div class="config-field"><label>projectId</label><input id="s-projectId" value="${escHtml(cfg.projectId||'')}" placeholder="mon-projet"/></div>
+      <div id="settings-fb-error" style="color:#c0392b;font-size:13px;margin-top:6px;display:none"></div>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end">
+        <button class="btn-primary" onclick="saveFirebaseSettings()">Enregistrer →</button>
+      </div>
+    </div>`;
+  }
+
+  const anthropicKey=localStorage.getItem('mp_anthropic_key')||'';
+  html+=`<div class="settings-section">
+    <h3>✨ Intelligence Artificielle</h3>
+    <p>Clé API Anthropic pour générer des plats, ingrédients et recettes. Obtenez-en une sur <a href="https://console.anthropic.com" target="_blank" style="color:#5b4fcf">console.anthropic.com</a>.</p>
+    <div class="config-field">
+      <label>Clé API Anthropic</label>
+      <input id="s-anthropic-key" type="password" value="${escHtml(anthropicKey)}" placeholder="sk-ant-..." style="font-family:monospace"/>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn-primary" onclick="saveAnthropicKey()" style="font-size:13px">Enregistrer</button>
+      ${anthropicKey?'<span style="font-size:12px;color:#27ae60">✓ Clé configurée</span>':'<span style="font-size:12px;color:#aaa">Non configurée</span>'}
+    </div>
+  </div>`;
+
+  html+=`<div class="settings-section danger-zone">
+    <h3>🗑 Réinitialiser les données</h3>
+    <p>Supprime toutes les recettes, la semaine et les extras. Cette action est irréversible.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${pendingReset?
+        `<button class="btn-confirm" onclick="confirmReset()">⚠️ Confirmer la suppression ?</button>
+         <button class="btn" onclick="cancelReset()">Annuler</button>`
+        :`<button class="btn" style="color:#c0392b;border-color:#f5c6c6" onclick="requestReset()">Réinitialiser toutes les données</button>`
+      }
+    </div>
+  </div>`;
+
+  document.getElementById('view-settings').innerHTML=html;
+}
+
+let pendingReset=false;
+function saveAnthropicKey(){
+  const key=document.getElementById('s-anthropic-key').value.trim();
+  if(key)localStorage.setItem('mp_anthropic_key',key);
+  else localStorage.removeItem('mp_anthropic_key');
+  renderSettings();
+}
+
+function requestReset(){pendingReset=true;renderSettings();}
+function cancelReset(){pendingReset=false;renderSettings();}
+function confirmReset(){
+  recipes=[];week=[];extraItems=[];checked={};pendingReset=false;
+  saveChecked();syncToFirestore();saveExtraItems();
+  renderSettings();
+  alert('Données réinitialisées.');
+}
+
+function switchToLocal(){
+  if(storageMode==='local')return;
+  if(!confirm('Passer en mode local ? Vos données Firebase ne seront plus utilisées sur cet appareil.'))return;
+  db=null;
+  useLocalMode();
+  renderSettings();
+}
+
+async function switchToFirebase(){
+  if(storageMode==='firebase')return;
+  const cfg=loadCfg();
+  if(!cfg){
+    // Pas encore de config : montrer les champs inline
+    storageMode='firebase';localStorage.setItem('mp_storage_mode','firebase');
+    renderSettings();return;
+  }
+  const ok=await initFirebase(cfg);
+  if(ok){storageMode='firebase';localStorage.setItem('mp_storage_mode','firebase');renderSettings();}
+  else{alert('Impossible de se connecter à Firebase. Vérifiez votre configuration.');}
+}
+
+async function saveFirebaseSettings(){
+  const apiKey=document.getElementById('s-apiKey').value.trim();
+  const authDomain=document.getElementById('s-authDomain').value.trim();
+  const projectId=document.getElementById('s-projectId').value.trim();
+  const err=document.getElementById('settings-fb-error');
+  if(!apiKey||!authDomain||!projectId){err.style.display='block';err.textContent='❌ Veuillez remplir tous les champs.';return;}
+  const cfg={apiKey,authDomain,projectId};
+  saveCfg(cfg);
+  const ok=await initFirebase(cfg);
+  if(ok){storageMode='firebase';localStorage.setItem('mp_storage_mode','firebase');err.style.display='none';renderSettings();}
+  else{err.style.display='block';err.textContent='❌ Connexion échouée. Vérifiez les valeurs.';}
+}
+
+// ── Render Extras ─────────────────────────────────────────────────────────────
+function renderExtras(){
+  const ingNames=allIngredientNames();
+  const datalist=`<datalist id="extra-ing-names">${ingNames.map(n=>`<option value="${escHtml(n)}">`).join('')}</datalist>`;
+  const catOpts=CAT_INGR.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+  const unitOpts=UNITS.map(u=>`<option value="${u}">${u||'—'}</option>`).join('');
+
+  const doneCount=extraItems.filter(i=>i.checked).length;
+  const total=extraItems.length;
+
+  let html=`${datalist}
+  <div class="row-header" style="margin-bottom:1rem">
+    <span style="font-size:14px;color:#888">Articles supplémentaires ajoutés aux courses</span>
+  </div>
+  <div class="card-form" style="margin-bottom:1rem">
+    <div class="section-title" style="margin-bottom:8px">Ajouter un article</div>
+    <div class="ing-row" style="flex-wrap:wrap">
+      <input type="text" id="extra-name" placeholder="Ingrédient" list="extra-ing-names" autocomplete="off" style="flex:2;min-width:130px">
+      <input type="number" id="extra-qty" placeholder="Qté" style="width:62px" min="0">
+      <select id="extra-unit" class="unit">${unitOpts}</select>
+      <select id="extra-cat" class="cat">${catOpts}</select>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <button class="btn-primary" onclick="addExtraItem()" style="font-size:13px">+ Ajouter aux courses</button>
+    </div>
+  </div>`;
+
+  if(extraItems.length){
+    const pct=total>0?Math.round(doneCount/total*100):0;
+    html+=`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="shop-meta"><span>${doneCount}/${total} articles cochés</span>
+    ${doneCount>0?`<button class="btn" onclick="clearExtraChecked()" style="font-size:12px;padding:4px 10px">↺ Tout décocher</button>`:''}
+    </div>`;
+
+    // Group by category
+    const bycat={};
+    extraItems.forEach((item,idx)=>{
+      const c=item.category||'autres';
+      if(!bycat[c])bycat[c]=[];
+      bycat[c].push({...item,idx});
+    });
+    CAT_INGR.forEach(cat=>{
+      if(!bycat[cat.id]?.length)return;
+      html+=`<div style="margin-bottom:1.25rem"><div class="section-title">${cat.icon} ${cat.label}</div>`;
+      bycat[cat.id].forEach(({idx,name,quantity,unit,checked:isDone})=>{
+        let qtyStr='';
+        const q=parseFloat(quantity);
+        if(!isNaN(q)&&q>0)qtyStr=`${q%1===0?q:q.toFixed(2)}${unit?' '+unit:''}`;
+        html+=`<div class="shop-item ${isDone?'done':''}" onclick="toggleExtraCheck(${idx})" style="cursor:pointer">
+          <div class="circle-check ${isDone?'checked':''}"></div>
+          <span class="sname">${escHtml(name)}</span>
+          ${qtyStr?`<span class="sqty">${escHtml(qtyStr)}</span>`:''}
+          <button class="btn-danger" onclick="event.stopPropagation();removeExtraItem(${idx})" style="margin-left:4px">🗑</button>
+        </div>`;
+      });
+      html+=`</div>`;
+    });
+  } else {
+    html+=`<div class="empty"><span class="icon">➕</span>Aucun article extra pour l'instant.<br>Ajoutez des ingrédients qui ne font pas partie de vos recettes.</div>`;
+  }
+
+  document.getElementById('view-extras').innerHTML=html;
+}
+
+function addExtraItem(){
+  const nameEl=document.getElementById('extra-name');
+  const name=nameEl.value.trim();
+  if(!name)return nameEl.focus();
+  const qty=parseFloat(document.getElementById('extra-qty').value);
+  const unit=document.getElementById('extra-unit').value;
+  const category=document.getElementById('extra-cat').value;
+  extraItems.push({id:genId(),name,quantity:isNaN(qty)?null:qty,unit,category,checked:false});
+  saveExtraItems();render();
+  // Reset form
+  document.getElementById('extra-name').value='';
+  document.getElementById('extra-qty').value='';
+  document.getElementById('extra-name').focus();
+}
+function toggleExtraCheck(idx){extraItems[idx].checked=!extraItems[idx].checked;saveExtraItems();render();}
+function clearExtraChecked(){extraItems=extraItems.map(i=>({...i,checked:false}));saveExtraItems();render();}
+function removeExtraItem(idx){extraItems.splice(idx,1);saveExtraItems();render();}
+
+// ── Password (SHA-256) ────────────────────────────────────────────────────────
+// Hash of "Mouse-Appetite-Spiral" — generated with: crypto.subtle.digest('SHA-256', new TextEncoder().encode('Mouse-Appetite-Spiral'))
+const PWD_HASH='65503029c88ef4917fe2cebbb43344844d04d5f99d93ad4b04a7dc63565b6867';
+
+
+async function sha256(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function checkPwd(){
+  const val=document.getElementById('pwd-input').value;
+  const hash=await sha256(val);
+  if(hash===PWD_HASH){
+    document.getElementById('pwd-screen').style.display='none';
+    sessionStorage.setItem('mp_auth','1');
+    showInstallScreen();
+  } else {
+    const err=document.getElementById('pwd-error');
+    err.textContent='❌ Mot de passe incorrect';
+    document.getElementById('pwd-input').value='';
+    document.getElementById('pwd-input').focus();
+    setTimeout(()=>err.textContent='',2000);
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+async function bootApp(){
+  const mode=localStorage.getItem('mp_storage_mode');
+  if(mode==='local'){useLocalMode();return;}
+  const cfg=loadCfg();
+  if(cfg){const ok=await initFirebase(cfg);if(!ok)document.getElementById('setup-screen').style.display='block';}
+  else{document.getElementById('setup-screen').style.display='block';}
+}
+
+(()=>{
+  // ✅ PWA installée (standalone) → accès direct, aucun code
+  if(isStandalone){
+    document.getElementById('pwd-screen').style.display='none';
+    function waitAndBoot(retries){
+      if(typeof firebase!=='undefined'){bootApp();}
+      else if(retries>0){setTimeout(()=>waitAndBoot(retries-1),50);}
+      else{console.warn('[boot] Firebase SDK not available, forcing local mode');useLocalMode();}
+    }
+    waitAndBoot(20);
+    return;
+  }
+  // Navigateur : vérifier session
+  if(sessionStorage.getItem('mp_auth')==='1'){
+    document.getElementById('pwd-screen').style.display='none';
+    showInstallScreen();
+  } else {
+    setTimeout(()=>document.getElementById('pwd-input')?.focus(),100);
+  }
+})();
+
+// ── PWA : enregistrement du Service Worker ────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => {
+        console.log('[PWA] Service Worker enregistré :', reg.scope);
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[PWA] Nouvelle version disponible');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[PWA] Échec enregistrement SW :', err));
+  });
+}
+</script>
+</body>
+</html>
