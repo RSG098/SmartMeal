@@ -1,5 +1,5 @@
 // ── Service Worker — Planificateur de repas ───────────────────────────────────
-const CACHE_NAME = 'repas-v2';
+const CACHE_NAME = 'repas-v3';
 
 // Fichiers à mettre en cache pour le mode hors-ligne
 const STATIC_ASSETS = [

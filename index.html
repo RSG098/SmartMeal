@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.2 -->
+<!-- v2.3 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -918,7 +918,21 @@ async function initFirebase(cfg){
   }catch(e){console.error(e);db=null;return false;}
 }
 
-let _syncTimer=null, _extrasTimer=null;
+let _syncTimer=null, _extrasTimer=null, _stateTimer=null;
+
+function saveState(){
+  localStorage.setItem('mp_checked',JSON.stringify(checked));
+  localStorage.setItem('mp_qty_adjust',JSON.stringify(qtyAdjust));
+  if(storageMode!=='firebase'||!db)return;
+  clearTimeout(_stateTimer);
+  _stateTimer=setTimeout(async()=>{
+    try{await db.collection('planner').doc('state').set({
+      checked: JSON.stringify(checked),
+      qtyAdjust: JSON.stringify(qtyAdjust)
+    });}
+    catch(e){console.error('[saveState]',e);}
+  },400);
+}
 
 function startListening(){
   setSyncDot('loading');
@@ -935,6 +949,15 @@ function startListening(){
     else{extraItems=[];}
     render();
   },err=>{console.error(err);});
+  // Document séparé : état courses (cochés + quantités ajustées)
+  db.collection('planner').doc('state').onSnapshot(snap=>{
+    if(snap.exists){
+      const d=snap.data();
+      try{checked=JSON.parse(d.checked||'{}');}catch{checked={};}
+      try{qtyAdjust=JSON.parse(d.qtyAdjust||'{}');}catch{qtyAdjust={};}
+    }
+    render();
+  },err=>{console.error('[state listener]',err);});
 }
 
 function syncToFirestore(){
@@ -947,7 +970,7 @@ function syncToFirestore(){
     catch(e){console.error(e);setSyncDot('err');}
   },300);
 }
-function saveChecked(){localStorage.setItem('mp_checked',JSON.stringify(checked))}
+function saveChecked(){saveState()}
 function saveExtraItems(){
   if(storageMode==='local'){localStorage.setItem('mp_extras',JSON.stringify(extraItems));return;}
   if(!db)return;
@@ -1311,7 +1334,7 @@ async function calculateNutrition(id){
   nutritionLoadingId=null;renderRecettes();
 }
 
-function saveQtyAdjust(){localStorage.setItem('mp_qty_adjust',JSON.stringify(qtyAdjust));}
+function saveQtyAdjust(){saveState();}
 function getQtyStep(qty,unit){
   if(unit==='g')return 50;
   if(unit==='ml')return 50;
@@ -1976,6 +1999,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js')
       .then(reg => {
         console.log('[PWA] Service Worker enregistré :', reg.scope);
+
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {
@@ -1984,6 +2008,9 @@ if ('serviceWorker' in navigator) {
             }
           });
         });
+
+        // 🔥 Ajout : forcer la vérification de mise à jour à chaque lancement
+        reg.update();
       })
       .catch(err => console.warn('[PWA] Échec enregistrement SW :', err));
   });
