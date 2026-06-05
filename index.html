@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.1 -->
+<!-- v2.2 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -12,129 +12,217 @@
 <meta name="apple-mobile-web-app-title" content="Repas">
 <link rel="icon" href="favicon.ico">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh}
-  .app{max-width:700px;margin:0 auto;padding:0 0 4rem}
-  .header{background:#fff;border-bottom:1px solid #e5e3dd;padding:1rem 1.5rem 0;position:sticky;top:0;z-index:10}
-  .header h1{font-size:18px;font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
-  .sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;margin-left:4px;transition:background 0.3s}
-  .sync-dot.ok{background:#27ae60}.sync-dot.err{background:#e74c3c}.sync-dot.loading{background:#f39c12;animation:pulse 1s infinite}
+  /* ── Design System ── */
+  :root{
+    --green:#27AE60;--green-light:#EBF8F1;--green-mid:#C3E9D4;
+    --bg:#F4F6F8;--card:#FFFFFF;--border:rgba(0,0,0,0.06);
+    --text:#1C1C1E;--muted:#8E8E93;--danger:#E03131;
+    --shadow-sm:0 2px 12px rgba(0,0,0,0.06);
+    --shadow-md:0 4px 24px rgba(0,0,0,0.09);
+    --shadow-lg:0 8px 40px rgba(0,0,0,0.13);
+    --shadow-green:0 4px 16px rgba(39,174,96,0.28);
+    --r-card:22px;--r-btn:50px;--r-input:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  button:focus,button:focus-visible{outline:none}
+  .qty-adj{display:flex;align-items:center;gap:3px;flex-shrink:0}
+  .qty-adj-btn{width:22px;height:22px;border-radius:7px;background:#F0F1F3;border:none;color:#666;font-size:16px;font-weight:600;padding:0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;cursor:pointer}
+  .qty-adj-btn:active{background:#DCDFE4}
+  .week-detail{background:#F5FCF7;border-radius:0 0 16px 16px;margin:-8px 0 8px;padding:10px 14px 14px;border:1.5px solid var(--green-mid);border-top:none}
+  .week-detail-ings{list-style:none;margin-bottom:0}
+  .week-detail-ings li{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.04);font-weight:500}
+  .week-detail-ings li:last-child{border-bottom:none}
+  .week-expand-btn{background:var(--green-light);border:none;color:var(--green);border-radius:10px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;cursor:pointer;transition:transform 0.2s;margin:-10px -6px -10px 0}
+  .week-expand-btn.open{transform:rotate(90deg)}
+  body{font-family:'Manrope',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+  .app{max-width:700px;margin:0 auto;padding:0 0 5.5rem}
+
+  /* ── Header ── */
+  .header{background:#fff;padding:16px 20px 14px;position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px;box-shadow:0 1px 0 rgba(0,0,0,0.06)}
+  .header-logo{line-height:1;flex-shrink:0;display:flex;align-items:center}
+  .header-text{flex:1;min-width:0}
+  .header-text h1{font-size:18px;font-weight:800;letter-spacing:-0.4px;line-height:1.2}
+  .header-text .subtitle{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
+  .header-settings{width:40px;height:40px;border-radius:12px;background:var(--bg);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8E8E93;flex-shrink:0;transition:all 0.15s}
+  .header-settings:hover{background:#E8EBF0;color:var(--text)}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;margin-left:6px;transition:background 0.3s;vertical-align:middle}
+  .sync-dot.ok{background:var(--green)}.sync-dot.err{background:#e74c3c}.sync-dot.loading{background:#f39c12;animation:pulse 1s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-  .tabs{display:flex}
-  .tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;padding:10px 8px;cursor:pointer;font-size:13px;font-weight:400;color:#888;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;font-family:inherit}
-  .tab.active{border-bottom-color:#1a1a1a;color:#1a1a1a;font-weight:500}
-  .content{padding:1.5rem}
-  button{cursor:pointer;font-family:inherit;font-size:13px;border-radius:8px;transition:all 0.15s}
-  .btn{background:#fff;border:1px solid #ddd;padding:7px 14px;color:#1a1a1a}.btn:hover{background:#f5f4f0}
-  .btn-primary{background:#1a1a1a;border:1px solid #1a1a1a;color:#fff;padding:7px 20px}.btn-primary:hover{background:#333}
-  .btn-icon{background:none;border:none;padding:4px 8px;color:#888}.btn-icon:hover{color:#1a1a1a}
-  .btn-danger{background:none;border:none;padding:4px 8px;color:#c0392b}
-  .btn-confirm{background:none;border:1px solid #c0392b;padding:4px 10px;font-size:12px;color:#c0392b;border-radius:8px}
-  input,select{font-family:inherit;font-size:14px;border:1px solid #ddd;border-radius:8px;padding:7px 10px;color:#1a1a1a;background:#fff;outline:none;transition:border-color 0.15s}
-  input:focus,select:focus{border-color:#888}
+
+  /* ── Top tab bar (below header, sticky) ── */
+  .topbar{background:var(--bg);padding:10px 12px 4px;position:sticky;top:68px;z-index:9}
+  .topbar-inner{max-width:700px;margin:0 auto;display:flex;gap:3px;background:#E4E7EA;border-radius:18px;padding:5px}
+  .topbar-tab{flex:1;background:transparent;border:none;padding:10px 4px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit;color:#48484A;font-size:11.5px;font-weight:600;transition:all 0.2s;border-radius:14px;letter-spacing:0.01em}
+  .topbar-tab.active{background:#fff;color:var(--green);box-shadow:0 2px 10px rgba(0,0,0,0.12)}
+  .topbar-tab-icon{line-height:1;display:flex;align-items:center;justify-content:center}
+  /* ── Bottom nav ── */
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid rgba(0,0,0,0.07);z-index:100;padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -2px 16px rgba(0,0,0,0.06)}
+  .bottom-nav-inner{max-width:700px;margin:0 auto;display:flex;width:100%;padding:6px 8px 8px;gap:2px}
+  .nav-tab{flex:1;background:none;border:none;padding:8px 4px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;color:#A0A0AB;font-size:10.5px;font-weight:600;transition:all 0.2s;border-radius:12px}
+  .nav-tab.active{color:var(--green)}
+  .nav-tab-icon{line-height:1;display:flex;align-items:center;justify-content:center}
+
+  /* ── Content ── */
+  .content{padding:1rem 1rem 0.5rem}
+
+  /* ── Buttons ── */
+  button{cursor:pointer;font-family:inherit;font-size:13px;border-radius:10px;transition:all 0.18s}
+  .btn{background:#fff;border:1.5px solid #E8EAED;padding:8px 16px;color:var(--text);font-weight:600;border-radius:12px}
+  .btn:hover{background:var(--bg);border-color:#D0D3D9}
+  .btn-primary{background:var(--green);border:none;color:#fff;padding:9px 22px;font-weight:700;border-radius:var(--r-btn);box-shadow:var(--shadow-green)}
+  .btn-primary:hover{background:#219f54;box-shadow:0 6px 20px rgba(39,174,96,0.38);transform:translateY(-1px)}
+  .btn-icon{background:#EBF8F1;border:none;padding:8px 10px;color:var(--green);font-size:15px;border-radius:11px}
+  .btn-icon:hover{background:#D5F2E4}
+  .btn-danger{background:#FFF0F0;border:none;padding:8px 10px;color:var(--danger);font-size:15px;border-radius:11px}
+  .btn-danger:hover{background:#FFE0E0}
+  .btn-confirm{background:none;border:1.5px solid var(--danger);padding:5px 12px;font-size:12px;color:var(--danger);border-radius:var(--r-btn);font-weight:600}
+
+  /* ── Inputs ── */
+  input,select{font-family:inherit;font-size:14px;border:1.5px solid #E8EAED;border-radius:var(--r-input);padding:9px 14px;color:var(--text);background:#fff;outline:none;transition:border-color 0.15s,box-shadow 0.15s;font-weight:500}
+  input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(39,174,96,0.1)}
   input[type=number]{-moz-appearance:textfield}
-  .card{background:#fff;border:1px solid #e5e3dd;border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px}
-  .card-form{background:#fff;border:1px solid #bbb;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
-  .tag{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
-  .tag-viande-hachee{background:#fdecea;color:#c0392b}.tag-poulet{background:#e8f8f0;color:#1e8449}
-  .tag-poisson{background:#e8f4fd;color:#1a6fa8}.tag-divers{background:#f0f0f0;color:#666}.tag-sandwich{background:#fef9e7;color:#b7770d}
-  .tag-legumes-salades{background:#e9fbe5;color:#2e7d32}.tag-sauce{background:#fff8e1;color:#e65100}.tag-dessert{background:#fce4ec;color:#c2185b}
-  .section-title{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
-  .ing-row{display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap;align-items:center}
-  .ing-row input[type=text]{flex:2;min-width:130px}.ing-row input[type=number]{width:62px}.ing-row .unit{width:90px}.ing-row .cat{flex:1;min-width:130px}
-  .recipe-header{display:flex;align-items:center;gap:8px}.recipe-header .name{flex:1;font-weight:500;font-size:15px}
-  .recipe-ings{font-size:13px;color:#888;line-height:1.7;margin-top:8px}
-  .week-item{display:flex;align-items:center;gap:10px;padding:10px 1rem;margin-bottom:6px;border-radius:8px;cursor:pointer;border:1px solid #e5e3dd;background:#fff;transition:all 0.15s;user-select:none}
-  .week-item.selected{background:#f5f4f0;border-color:#ccc}
-  .checkbox{width:20px;height:20px;border-radius:4px;flex-shrink:0;border:1.5px solid #ccc;background:transparent;display:flex;align-items:center;justify-content:center}
-  .checkbox.checked{background:#1a1a1a;border-color:#1a1a1a}.checkbox.checked::after{content:'✓';font-size:12px;color:#fff;font-weight:600}
-  .week-item .wname{flex:1;font-size:14px}.week-item .wingr{font-size:12px;color:#aaa}
-  .mult-btns{display:flex;gap:3px}
-  .mult-btn{width:28px;height:28px;font-size:12px;padding:0;border:1px solid #ddd;background:transparent;color:#888;border-radius:6px}
-  .mult-btn.active{background:#1a1a1a;border-color:#1a1a1a;color:#fff}
-  .shop-summary{background:#f0efeb;border-radius:8px;padding:10px 1rem;margin-bottom:1.25rem}
-  .shop-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
-  .shop-meta span{font-size:13px;color:#888}
-  .shop-item{display:flex;align-items:center;gap:10px;padding:9px 1rem;margin-bottom:4px;border-radius:8px;cursor:pointer;border:1px solid #e5e3dd;background:#fff;transition:opacity 0.15s;user-select:none}
-  .shop-item.done{opacity:0.38}
-  .circle-check{width:20px;height:20px;border-radius:50%;flex-shrink:0;border:1.5px solid #ccc;display:flex;align-items:center;justify-content:center}
-  .circle-check.checked{background:#1a1a1a;border-color:#1a1a1a}.circle-check.checked::after{content:'✓';font-size:11px;color:#fff;font-weight:600}
-  .shop-item .sname{flex:1;font-size:14px}.shop-item.done .sname{text-decoration:line-through}.shop-item .sqty{font-size:13px;font-weight:500;color:#888}
-  .empty{text-align:center;padding:3rem 1rem;color:#aaa;font-size:14px}.empty .icon{font-size:36px;display:block;margin-bottom:12px}
-  .card{cursor:pointer;transition:box-shadow 0.15s}
-  .card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.07)}
-  .card.expanded{border-color:#bbb;box-shadow:0 2px 12px rgba(0,0,0,0.09);cursor:default}
-  .recipe-detail{margin-top:12px;padding-top:12px;border-top:1px solid #f0eeea}
+
+  /* ── Search bar override ── */
+  #recipe-search{border-radius:50px !important;border:none !important;box-shadow:var(--shadow-sm) !important;padding:13px 42px 13px 48px !important;font-size:14px !important;font-weight:500 !important;background:#fff !important;width:100% !important}
+  #recipe-search:focus{box-shadow:0 4px 20px rgba(0,0,0,0.1) !important;outline:none !important}
+
+  /* ── Cards ── */
+  .card{background:var(--card);border:none;border-radius:var(--r-card);margin-bottom:14px;overflow:hidden;cursor:pointer;transition:box-shadow 0.2s,transform 0.2s;box-shadow:var(--shadow-sm)}
+  .card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+  .card.expanded{box-shadow:var(--shadow-lg);cursor:default;transform:none}
+  .card-form{background:#fff;border-radius:var(--r-card);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--shadow-sm);border:none}
+
+  /* ── Recipe card layout ── */
+  .rc-inner{display:flex;align-items:flex-start;position:relative}
+  .rc-thumb{width:92px;height:92px;flex-shrink:0;object-fit:cover;border-radius:16px;margin:12px 8px 12px 12px}
+  .rc-body{flex:1;padding:14px 14px 10px;min-width:0}
+  .rc-body.full{padding:16px 16px 12px}
+  .rc-title{font-size:16px;font-weight:800;letter-spacing:-0.3px;margin-bottom:6px;line-height:1.3}
+  .rc-ings{font-size:12.5px;color:var(--muted);line-height:1.65;margin-top:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-weight:500}
+  .rc-actions{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:10px;padding-top:6px}
+  .rc-actions .btn-danger{padding:7px 10px;border-radius:11px}
+  .rc-actions .btn-icon{padding:7px 10px;font-size:14px}
+
+  /* ── Three-dot menu button on card ── */
+  .rc-menu-dots{position:absolute;top:10px;right:10px;background:none;border:none;font-size:20px;color:#C7C7CC;padding:2px 6px;border-radius:8px;cursor:pointer;line-height:1;letter-spacing:1px}
+  .rc-menu-dots:hover{background:#F4F6F8;color:#8E8E93}
+
+  /* ── Tags ── */
+  .tag{font-size:12px;padding:5px 13px;border-radius:50px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;letter-spacing:0.01em}
+  .tag-viande-hachee{background:#FDECEA;color:#C0392B}
+  .tag-poulet{background:#E8F8F0;color:#1A7A3F}
+  .tag-poisson{background:#E8F4FD;color:#1A6FA8}
+  .tag-divers{background:#F2F2F7;color:#48484A}
+  .tag-sandwich{background:#FEF9E7;color:#B7770D}
+  .tag-legumes-salades{background:#E9FBE5;color:#2E7D32}
+  .tag-sauce{background:#FFF8E1;color:#E65100}
+  .tag-dessert{background:#FCE4EC;color:#C2185B}
+
+  /* ── Recipe detail (expanded) ── */
+  .recipe-detail{padding:0 16px 16px;border-top:1px solid rgba(0,0,0,0.05)}
   .detail-ings{list-style:none;margin-bottom:1rem}
-  .detail-ings li{display:flex;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid #f5f4f0;font-size:13px}
+  .detail-ings li{display:flex;align-items:baseline;gap:6px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.04);font-size:13px}
   .detail-ings li:last-child{border-bottom:none}
-  .detail-ings .ing-label{flex:1;color:#1a1a1a}
-  .detail-ings .ing-qty{font-size:12px;color:#999;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .notes-label{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:flex;align-items:center;gap:6px}
-  .notes-label .saved-flash{font-size:10px;color:#27ae60;opacity:0;transition:opacity 0.4s;font-weight:400;text-transform:none;letter-spacing:0}
+  .detail-ings .ing-label{flex:1;color:var(--text);font-weight:500}
+  .detail-ings .ing-qty{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+
+  /* ── Other ── */
+  .section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:10px}
+  .ing-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
+  .ing-row input[type=text]{flex:2;min-width:130px}.ing-row input[type=number]{width:62px}.ing-row .unit{width:90px}.ing-row .cat{flex:1;min-width:130px}
+  .week-item{display:flex;align-items:center;gap:12px;padding:12px 1rem;margin-bottom:8px;border-radius:16px;cursor:pointer;border:none;background:#fff;transition:all 0.18s;user-select:none;box-shadow:var(--shadow-sm)}
+  .week-item.selected{background:var(--green-light);box-shadow:0 2px 12px rgba(39,174,96,0.15)}
+  .week-item:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+  .checkbox{width:22px;height:22px;border-radius:7px;flex-shrink:0;border:2px solid #D1D1D6;background:transparent;display:flex;align-items:center;justify-content:center}
+  .checkbox.checked{background:var(--green);border-color:var(--green)}.checkbox.checked::after{content:'✓';font-size:13px;color:#fff;font-weight:800}
+  .week-item .wname{flex:1;font-size:14px;font-weight:600}.week-item .wingr{font-size:12px;color:var(--muted);font-weight:500}
+  .mult-btns{display:flex;gap:4px}
+  .mult-btn{width:30px;height:30px;font-size:12px;padding:0;border:1.5px solid #E8EAED;background:transparent;color:#8E8E93;border-radius:8px;font-weight:600}
+  .mult-btn.active{background:var(--green);border-color:var(--green);color:#fff}
+  .shop-summary{background:var(--green-light);border-radius:16px;padding:14px 1rem;margin-bottom:1.25rem;border:1.5px solid var(--green-mid)}
+  .shop-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+  .shop-meta span{font-size:13px;color:var(--muted);font-weight:500}
+  .shop-item{display:flex;align-items:center;gap:12px;padding:12px 1rem;margin-bottom:6px;border-radius:14px;cursor:pointer;border:none;background:#fff;transition:opacity 0.15s;user-select:none;box-shadow:var(--shadow-sm)}
+  .shop-item.done{opacity:0.38}
+  .circle-check{width:22px;height:22px;border-radius:50%;flex-shrink:0;border:2px solid #D1D1D6;display:flex;align-items:center;justify-content:center}
+  .circle-check.checked{background:var(--green);border-color:var(--green)}.circle-check.checked::after{content:'✓';font-size:11px;color:#fff;font-weight:800}
+  .shop-item .sname{flex:1;font-size:14px;font-weight:500}.shop-item.done .sname{text-decoration:line-through}.shop-item .sqty{font-size:13px;font-weight:700;color:var(--muted)}
+  .empty{text-align:center;padding:3.5rem 1rem;color:var(--muted);font-size:14px;font-weight:500}.empty .icon{font-size:40px;display:block;margin-bottom:14px}
+  .notes-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .notes-label .saved-flash{font-size:10px;color:var(--green);opacity:0;transition:opacity 0.4s;font-weight:500;text-transform:none;letter-spacing:0}
   .notes-label .saved-flash.show{opacity:1}
-  textarea.recipe-notes{width:100%;min-height:120px;resize:none;overflow:hidden;border:1px solid #e5e3dd;border-radius:8px 8px 0 8px;padding:10px 12px;font-family:inherit;font-size:13px;color:#1a1a1a;background:#fafaf8;line-height:1.6;outline:none;transition:border-color 0.15s}
-  textarea.recipe-notes:focus{border-color:#888;background:#fff}
-  textarea.recipe-notes::placeholder{color:#bbb}
-  .notes-resize-bar{display:flex;justify-content:flex-end;gap:4px;margin-top:2px}
-  .notes-resize-btn{width:32px;height:28px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#666;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:background 0.15s}
-  .notes-resize-btn:active{background:#f0eeea}
-  .form-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:10px;border-top:1px solid #eee;margin-top:4px}
-  .row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
-  .progress-bar{height:3px;background:#eee;border-radius:2px;margin-bottom:1rem}
-  .progress-fill{height:100%;background:#1a1a1a;border-radius:2px;transition:width 0.3s}
-  #setup-screen{display:none;position:fixed;inset:0;background:#f5f4f0;z-index:100;overflow-y:auto;padding:2rem 1rem}
-  .setup-box{max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:2rem;border:1px solid #e5e3dd}
-  .setup-box h2{font-size:20px;font-weight:600;margin-bottom:8px}
+  textarea.recipe-notes{width:100%;min-height:120px;resize:none;overflow:hidden;border:1.5px solid #E8EAED;border-radius:12px 12px 0 12px;padding:11px 14px;font-family:inherit;font-size:13px;color:var(--text);background:#FAFBFC;line-height:1.65;outline:none;transition:border-color 0.15s,box-shadow 0.15s;font-weight:500}
+  textarea.recipe-notes:focus{border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(39,174,96,0.1)}
+  textarea.recipe-notes::placeholder{color:#C7C7CC}
+  .notes-resize-bar{display:flex;justify-content:flex-end;gap:4px;margin-top:4px}
+  .notes-resize-btn{width:34px;height:30px;border:1.5px solid #E8EAED;border-radius:8px;background:#fff;color:#8E8E93;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:background 0.15s}
+  .notes-resize-btn:active{background:var(--bg)}
+  .form-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:12px;border-top:1px solid rgba(0,0,0,0.06);margin-top:6px}
+  .row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+  .progress-bar{height:4px;background:#E8EAED;border-radius:4px;margin-bottom:1rem}
+  .progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width 0.3s}
+
+  /* ── Setup & modals ── */
+  #setup-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:100;overflow-y:auto;padding:2rem 1rem}
+  .setup-box{max-width:560px;margin:0 auto;background:#fff;border-radius:20px;padding:2rem;box-shadow:var(--shadow-md);border:none}
+  .setup-box h2{font-size:20px;font-weight:800;margin-bottom:8px}
   .setup-box p{font-size:14px;color:#666;margin-bottom:1.5rem;line-height:1.6}
-  .step{background:#f8f7f4;border-radius:10px;padding:1rem 1.25rem;margin-bottom:12px;font-size:14px;line-height:1.7}
-  .step strong{display:block;margin-bottom:4px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
-  .step code{background:#eee;padding:1px 6px;border-radius:4px;font-family:monospace;font-size:13px}
+  .step{background:var(--bg);border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px;font-size:14px;line-height:1.7}
+  .step strong{display:block;margin-bottom:4px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;font-weight:700}
+  .step code{background:#E8EAED;padding:2px 7px;border-radius:5px;font-family:monospace;font-size:13px}
   .step a{color:#1a6fa8}
   .config-field{margin-bottom:10px}
-  .config-field label{display:block;font-size:12px;font-weight:500;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em}
+  .config-field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.07em}
   .config-field input{width:100%;font-size:13px}
   .setup-error{color:#c0392b;font-size:13px;margin-top:8px;display:none}
-  .settings-section{background:#fff;border:1px solid #e5e3dd;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
-  .settings-section h3{font-size:14px;font-weight:600;margin-bottom:4px}
-  .settings-section p{font-size:13px;color:#888;margin-bottom:1rem;line-height:1.5}
-  .mode-btn{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;background:#fff;width:100%;margin-bottom:8px;text-align:left;cursor:pointer;transition:all 0.15s}
-  .mode-btn:hover{border-color:#aaa;background:#fafafa}
-  .mode-btn.active{border-color:#1a1a1a;background:#f8f7f4}
-  .mode-btn .mode-icon{font-size:22px;flex-shrink:0}
-  .mode-btn .mode-text .mode-title{font-size:14px;font-weight:500;display:block}
-  .mode-btn .mode-text .mode-desc{font-size:12px;color:#888;display:block;margin-top:2px}
-  .badge-mode{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:6px}
-  .badge-local{background:#e8f4fd;color:#1a6fa8}
-  .badge-firebase{background:#e8f8f0;color:#1e8449}
-  .danger-zone{border-color:#f5c6c6 !important}
+  .settings-section{background:#fff;border:none;border-radius:18px;padding:1.5rem;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+  .settings-section h3{font-size:15px;font-weight:700;margin-bottom:4px}
+  .settings-section p{font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.55;font-weight:500}
+  .mode-btn{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #E8EAED;border-radius:14px;background:#fff;width:100%;margin-bottom:8px;text-align:left;cursor:pointer;transition:all 0.18s}
+  .mode-btn:hover{border-color:#C0C3CC;background:var(--bg)}
+  .mode-btn.active{border-color:var(--green);background:var(--green-light)}
+  .search-highlight{background:#FFE082;border-radius:3px;padding:0 2px}
+  .mode-btn .mode-icon{font-size:24px;flex-shrink:0}
+  .mode-btn .mode-text .mode-title{font-size:14px;font-weight:700;display:block}
+  .mode-btn .mode-text .mode-desc{font-size:12px;color:var(--muted);display:block;margin-top:2px;font-weight:500}
+  .badge-mode{font-size:10px;padding:3px 9px;border-radius:50px;font-weight:700;margin-left:8px}
+  .badge-local{background:#E8F4FD;color:#1a6fa8}
+  .badge-firebase{background:#E8F8F0;color:#1e8449}
+  .danger-zone{box-shadow:0 2px 12px rgba(224,49,49,0.08) !important}
   .danger-zone h3{color:#c0392b}
-  .ai-panel{background:linear-gradient(135deg,#f8f7ff 0%,#f0f8ff 100%);border:1px solid #d0c8f0;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
-  .ai-panel h3{font-size:13px;font-weight:600;margin-bottom:10px;color:#5b4fcf;display:flex;align-items:center;gap:6px}
-  .ai-tabs{display:flex;gap:4px;margin-bottom:10px;background:#ede9ff;border-radius:8px;padding:3px}
-  .ai-tab{flex:1;border:none;background:transparent;padding:6px 4px;font-size:12px;font-weight:500;color:#888;border-radius:6px;cursor:pointer;transition:all 0.15s;font-family:inherit}
-  .ai-tab.active{background:#fff;color:#5b4fcf;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+
+  /* ── AI panel ── */
+  .ai-panel{background:linear-gradient(135deg,#F8F7FF 0%,#F0F8FF 100%);border:1.5px solid #D8D0F4;border-radius:16px;padding:1.25rem;margin-bottom:1rem}
+  .ai-panel h3{font-size:13px;font-weight:700;margin-bottom:10px;color:#5b4fcf;display:flex;align-items:center;gap:6px}
+  .ai-tabs{display:flex;gap:4px;margin-bottom:10px;background:#EDE9FF;border-radius:10px;padding:3px}
+  .ai-tab{flex:1;border:none;background:transparent;padding:7px 4px;font-size:12px;font-weight:600;color:#9E9AB8;border-radius:8px;cursor:pointer;transition:all 0.15s;font-family:inherit}
+  .ai-tab.active{background:#fff;color:#5b4fcf;box-shadow:0 2px 8px rgba(91,79,207,0.15)}
   .ai-input-row{display:flex;gap:6px}
-  .ai-input-row input{flex:1;font-size:13px;border:1px solid #d0c8f0;border-radius:8px;padding:7px 10px;background:#fff;outline:none}
-  .ai-input-row input:focus{border-color:#5b4fcf}
-  .ai-btn{background:#5b4fcf;border:none;color:#fff;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;transition:background 0.15s}
+  .ai-input-row input{flex:1;font-size:13px;border:1.5px solid #D8D0F4;border-radius:10px;padding:8px 12px;background:#fff;outline:none}
+  .ai-input-row input:focus{border-color:#5b4fcf;box-shadow:0 0 0 3px rgba(91,79,207,0.1)}
+  .ai-btn{background:#5b4fcf;border:none;color:#fff;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;transition:background 0.15s}
   .ai-btn:hover{background:#4a3db8}
-  .ai-btn:disabled{background:#b8b0e8;cursor:not-allowed}
-  .ai-result{margin-top:10px;font-size:14px;background:#f4f2ff;border:1.5px solid #b8aef0;border-radius:8px;padding:12px 14px;line-height:1.7;color:#1a1a1a;white-space:pre-wrap;max-height:260px;overflow-y:auto;font-weight:400}
+  .ai-btn:disabled{background:#B8B0E8;cursor:not-allowed}
+  .ai-result{margin-top:10px;font-size:13px;background:#F4F2FF;border:1.5px solid #C8BEFA;border-radius:10px;padding:12px 14px;line-height:1.7;color:var(--text);white-space:pre-wrap;max-height:260px;overflow-y:auto;font-weight:500}
   .ai-result-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
   .ai-result-actions .btn{font-size:12px;padding:5px 12px}
-  .ai-result-actions .btn-primary{font-size:12px;padding:5px 12px}
-  .ai-no-key{font-size:12px;color:#e67e22;background:#fef9e7;border:1px solid #f5cba7;border-radius:8px;padding:8px 10px;margin-top:8px}
-  .nutri-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
-  .nutri-cell{background:#f8f7f4;border-radius:10px;padding:10px 6px;text-align:center;border:1px solid #ede9e4}
-  .nutri-val{display:block;font-size:16px;font-weight:700;color:#1a1a1a;line-height:1.2}
-  .nutri-unit{font-size:10px;font-weight:400;color:#aaa;margin-left:1px}
-  .nutri-label{display:block;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-top:4px}
-  .nutri-section{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f0eeea}
+  .ai-result-actions .btn-primary{font-size:12px;padding:5px 14px}
+  .ai-no-key{font-size:12px;color:#e67e22;background:#FEF9E7;border:1.5px solid #F5CBA7;border-radius:10px;padding:9px 12px;margin-top:8px;font-weight:500}
+
+  /* ── Nutrition grid ── */
+  .nutri-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .nutri-cell{background:var(--bg);border-radius:14px;padding:12px 6px;text-align:center;border:none}
+  .nutri-val{display:block;font-size:17px;font-weight:800;color:var(--text);line-height:1.2}
+  .nutri-unit{font-size:10px;font-weight:600;color:var(--muted);margin-left:1px}
+  .nutri-label{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;font-weight:700}
+  .nutri-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(0,0,0,0.05)}
   .nutri-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-  .recipe-ai-existing{background:#f8f7ff;border:1px solid #d0c8f0;border-radius:10px;padding:10px 12px;margin-top:8px}
-  .ai-existing-section{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f0eeea}
+  .recipe-ai-existing{background:#F8F7FF;border:1.5px solid #D8D0F4;border-radius:12px;padding:12px 14px;margin-top:8px}
+  .ai-existing-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(0,0,0,0.05)}
   .ai-existing-header{display:flex;align-items:center;justify-content:space-between}
 </style>
 </head>
@@ -238,15 +326,51 @@
 
 <div class="app" id="main-app" style="display:none">
   <div class="header">
-    <h1>🍽️ Planificateur de repas <span id="sync-dot" class="sync-dot"></span></h1>
-    <div class="tabs">
-      <button class="tab active" onclick="showTab('recettes')" id="tab-recettes">📖 Recettes</button>
-      <button class="tab" onclick="showTab('semaine')" id="tab-semaine">📅 Ma semaine</button>
-      <button class="tab" onclick="showTab('courses')" id="tab-courses">🛒 Courses</button>
-      <button class="tab" onclick="showTab('extras')" id="tab-extras">➕ Extras</button>
-      <button class="tab" onclick="showTab('settings')" id="tab-settings">⚙️</button>
+<span class="header-logo">
+      <svg width="46" height="32" viewBox="0 0 46 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Fork -->
+        <line x1="6" y1="4" x2="6" y2="10" stroke="#27AE60" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="9" y1="4" x2="9" y2="10" stroke="#27AE60" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="12" y1="4" x2="12" y2="10" stroke="#27AE60" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M6 10 Q9 13 9 16 L9 28" stroke="#27AE60" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M12 10 Q9 13 9 16" stroke="#27AE60" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- Plate -->
+        <circle cx="23" cy="16" r="12" stroke="#27AE60" stroke-width="1.8"/>
+        <circle cx="23" cy="16" r="8" stroke="#27AE60" stroke-width="1.2" stroke-dasharray="0" opacity="0.35"/>
+        <!-- Knife -->
+        <path d="M37 4 C37 4 41 8 41 14 L37 14 L37 28" stroke="#27AE60" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <div class="header-text">
+      <h1>Planificateur de repas <span id="sync-dot" class="sync-dot"></span></h1>
+      <div class="subtitle" id="header-subtitle">Chargement…</div>
     </div>
+    <button class="header-settings" onclick="showTab('settings')" id="tab-settings" title="Paramètres">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+    </button>
   </div>
+  <nav class="topbar" id="main-topbar">
+    <div class="topbar-inner">
+      <button class="topbar-tab active" id="ttab-recettes" onclick="showTab('recettes')">
+        <span class="topbar-tab-icon"><svg width="24" height="24" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 C11 4 7.5 3.5 3 4.5 L3 20 C7.5 19 11 19.5 14 21.5"/><path d="M14 6 C17 4 20.5 3.5 25 4.5 L25 20 C20.5 19 17 19.5 14 21.5"/></svg></span>
+        <span>Recettes</span>
+      </button>
+      <button class="topbar-tab" id="ttab-semaine" onclick="showTab('semaine')">
+        <span class="topbar-tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg></span>
+        <span>Ma semaine</span>
+      </button>
+      <button class="topbar-tab" id="ttab-courses" onclick="showTab('courses')">
+        <span class="topbar-tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg></span>
+        <span>Courses</span>
+      </button>
+      <button class="topbar-tab" id="ttab-extras" onclick="showTab('extras')">
+        <span class="topbar-tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+        <span>Extras</span>
+      </button>
+    </div>
+  </nav>
   <div class="content">
     <div id="view-recettes"></div>
     <div id="view-semaine" style="display:none"></div>
@@ -255,6 +379,27 @@
     <div id="view-settings" style="display:none"></div>
   </div>
 </div>
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="nav-tab active" onclick="showTab('recettes')" id="tab-recettes">
+      <span class="nav-tab-icon"><svg width="24" height="24" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 C11 4 7.5 3.5 3 4.5 L3 20 C7.5 19 11 19.5 14 21.5"/><path d="M14 6 C17 4 20.5 3.5 25 4.5 L25 20 C20.5 19 17 19.5 14 21.5"/></svg></span>
+      <span>Recettes</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('semaine')" id="tab-semaine">
+      <span class="nav-tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg></span>
+      <span>Ma semaine</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('courses')" id="tab-courses">
+      <span class="nav-tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg></span>
+      <span>Courses</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('extras')" id="tab-extras">
+      <span class="nav-tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+      <span>Extras</span>
+    </button>
+  </div>
+</nav>
+
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -700,6 +845,8 @@ let checked=JSON.parse(localStorage.getItem('mp_checked')||'{}');
 let extraItems=[];
 let pendingDelete=null, editingId=null, showAddForm=false, currentTab='recettes', expandedRecipeId=null;
 let recipeSearch='';
+let qtyAdjust=JSON.parse(localStorage.getItem('mp_qty_adjust')||'{}');
+let expandedWeekId=null;
 let recipeAIPanelId=null;
 let nutritionLoadingId=null;
 let db=null;
@@ -814,131 +961,187 @@ function saveExtraItems(){
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function showTab(t){
   currentTab=t;
-  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
-  document.getElementById('tab-'+t).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+  const tabEl=document.getElementById('tab-'+t);
+  if(tabEl)tabEl.classList.add('active');
+  document.querySelectorAll('.topbar-tab').forEach(el=>el.classList.remove('active'));
+  const topTabEl=document.getElementById('ttab-'+t);
+  if(topTabEl)topTabEl.classList.add('active');
+  const gear=document.getElementById('tab-settings');
+  if(gear)gear.style.background=t==='settings'?'var(--green-light)':'';
   document.querySelectorAll('[id^="view-"]').forEach(el=>el.style.display='none');
   document.getElementById('view-'+t).style.display='block';
   render();
 }
 
-function tagBadge(tag){const t=TAGS.find(x=>x.id===tag)||{label:tag};return `<span class="tag tag-${tag}">${t.label}</span>`;}
+function updateSubtitle(){
+  const sub=document.getElementById('header-subtitle');
+  if(!sub)return;
+  const labels={recettes:`${recipes.length} recette${recipes.length!==1?'s':''}`,semaine:`${week.length} plat${week.length!==1?'s':''} cette semaine`,courses:'Liste de courses',extras:'Articles extra',settings:'Paramètres'};
+  sub.textContent=labels[currentTab]||'';
+}
+
+function tagBadge(tag){
+  const icons={
+    'viande-hachee':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><circle cx="12" cy="12" r="8" fill="currentColor" opacity="0.13"/><circle cx="12" cy="12" r="8"/><path d="M5.5 10 Q6.5 8.5 7.5 10 Q8.5 8.5 9.5 10 Q10.5 8.5 11.5 10 Q12.5 8.5 13.5 10 Q14.5 8.5 15.5 10 Q16.5 8.5 17 10"/><path d="M4.5 13 Q5.5 11.5 6.5 13 Q7.5 11.5 8.5 13 Q9.5 11.5 10.5 13 Q11.5 11.5 12.5 13 Q13.5 11.5 14.5 13 Q15.5 11.5 16.5 13 Q17.5 11.5 18 13"/><path d="M5.5 16 Q6.5 14.5 7.5 16 Q8.5 14.5 9.5 16 Q10.5 14.5 11.5 16 Q12.5 14.5 13.5 16 Q14.5 14.5 15.5 16 Q16.5 14.5 17 16"/></svg>',
+    'poulet':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><ellipse cx="12" cy="15" rx="6" ry="5.5" fill="currentColor" opacity="0.13"/><ellipse cx="12" cy="15" rx="6" ry="5.5"/><circle cx="17.5" cy="7.5" r="3.5" fill="currentColor" opacity="0.13"/><circle cx="17.5" cy="7.5" r="3.5"/><circle cx="18.5" cy="6.5" r="0.9" fill="currentColor" stroke="none"/><path d="M16 4.5 Q17.5 3 19 4.5"/><path d="M21 8 L23.5 9 L21 10"/><path d="M8 14.5 Q10 12.5 12 14.5"/><path d="M10 20.5 L9.5 23 M14 20.5 L14.5 23"/><path d="M9.5 23 L8.5 24.5 M9.5 23 L10.5 24.5 M14.5 23 L13.5 24.5 M14.5 23 L15.5 24.5"/></svg>',
+    'poisson':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M3 12 C3 7.5 6.5 4 11.5 4 C16.5 4 20 7.5 20 12 C20 16.5 16.5 20 11.5 20 C6.5 20 3 16.5 3 12Z" fill="currentColor" opacity="0.13"/><path d="M3 12 C3 7.5 6.5 4 11.5 4 C16.5 4 20 7.5 20 12 C20 16.5 16.5 20 11.5 20 C6.5 20 3 16.5 3 12Z"/><path d="M20 8 L23.5 5.5 Q24 9 24 12 Q24 15 23.5 18.5 L20 16"/><path d="M10 4 Q12 1.5 14.5 4"/><circle cx="7" cy="10.5" r="1.5" fill="currentColor" stroke="none"/></svg>',
+    'divers':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M3.5 9 L20.5 9 Q20 19.5 12 19.5 Q4 19.5 3.5 9Z" fill="currentColor" opacity="0.13"/><path d="M3.5 9 L20.5 9 Q20 19.5 12 19.5 Q4 19.5 3.5 9Z"/><ellipse cx="12" cy="9" rx="8.5" ry="1.5" fill="currentColor" opacity="0.2"/><circle cx="9" cy="14.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="15.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="14.5" r="1.3" fill="currentColor" stroke="none"/><path d="M11 5.5 Q11 3.5 12 3.5 Q13 3.5 13 5.5"/></svg>',
+    'sandwich':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M2 20 L2 5 Q2 3 4.5 3 L20 3 Q22 3 22 5.5 Z" fill="currentColor" opacity="0.13"/><path d="M2 20 L2 5 Q2 3 4.5 3 L20 3 Q22 3 22 5.5 Z"/><path d="M2 7.5 L17.5 7.5"/><path d="M2 12 Q5 10 8 12 Q11 14 14 12 L18.5 12"/><path d="M2 16.5 L13 16.5"/></svg>',
+    'legumes-salades':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M4 7 Q5 4 7 4 Q9 4 10 7 L12 18 Q11.5 21 8 21 Q4.5 21 4 18 Z" fill="currentColor" opacity="0.13"/><path d="M4 7 Q5 4 7 4 Q9 4 10 7 L12 18 Q11.5 21 8 21 Q4.5 21 4 18 Z"/><path d="M7 4 Q7 2 8 1"/><path d="M5.5 4.5 Q5 2.5 6 1.5"/><path d="M8.5 4.5 Q9.5 2.5 9 1.5"/><circle cx="18" cy="14" r="5.5" fill="currentColor" opacity="0.13"/><circle cx="18" cy="14" r="5.5"/><path d="M18 8.5 L18 12.5"/><path d="M14.5 10.5 C16 12 17 12.5 18 12.5"/><path d="M21.5 10.5 C20 12 19 12.5 18 12.5"/></svg>',
+    'sauce':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M3 11 L3 19 Q3 22 7.5 22 L14 22 Q18 22 18 19 L18 15" fill="currentColor" opacity="0.13"/><path d="M3 11 L3 19 Q3 22 7.5 22 L14 22 Q18 22 18 19 L18 15"/><path d="M18 11 Q22 9.5 22 14 Q22 18.5 18 17"/><path d="M2 11 L16 11" stroke-width="2.2"/><path d="M7 11 Q7.5 8.5 10 8.5 Q12 8.5 12 11"/></svg>',
+    'dessert':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M7 14 L8.5 21 Q9 23 12 23 Q15 23 15.5 21 L17 14 Z" fill="currentColor" opacity="0.13"/><path d="M7 14 L8.5 21 Q9 23 12 23 Q15 23 15.5 21 L17 14 Z"/><path d="M8 17.5 L8.5 20 M10.5 14.5 L11 20 M13 14.5 L13 20 M15.5 17.5 L15 20" stroke-width="1.2" opacity="0.5"/><path d="M6 14 Q5.5 9 12 9 Q18.5 9 18 14 Z" fill="currentColor" opacity="0.15"/><path d="M6 14 Q5.5 9 12 9 Q18.5 9 18 14"/><path d="M9 9 Q9.5 6.5 12 6.5 Q14.5 6.5 15 9"/><path d="M12 6.5 L12 4.5"/><circle cx="12" cy="3.5" r="1.5" fill="currentColor" stroke="none"/></svg>'
+  };
+  const t=TAGS.find(x=>x.id===tag)||{label:tag};
+  return `<span class="tag tag-${tag}" style="display:inline-flex;align-items:center;gap:4px">${icons[tag]||''} ${t.label}</span>`;
+}
+
+// ── Search normalization ──────────────────────────────────────────────────────
+function normQ(s){
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+}
 
 // ── Render Recettes ───────────────────────────────────────────────────────────
 function renderRecettes(){
+  updateSubtitle();
   const searchEl=document.getElementById('recipe-search');
   const hadFocus=searchEl&&document.activeElement===searchEl;
   const selStart=hadFocus?searchEl.selectionStart:0;
   const selEnd=hadFocus?searchEl.selectionEnd:0;
 
-  const filtered=recipeSearch
-    ?recipes.filter(r=>r.name.toLowerCase().includes(recipeSearch.toLowerCase())||
-        r.ingredients.some(i=>i.name.toLowerCase().includes(recipeSearch.toLowerCase())))
-    :recipes;
-  let html=`<div style="margin-bottom:1rem;position:relative">
-    <input type="text" id="recipe-search" value="${escHtml(recipeSearch)}" placeholder="🔍 Rechercher une recette ou un ingrédient…" style="width:100%;font-size:14px;padding:9px 36px 9px 12px;border:1px solid #ddd;border-radius:10px;background:#fff" oninput="recipeSearch=this.value;renderRecettes()">
-    ${recipeSearch?`<button onclick="recipeSearch='';renderRecettes()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#aaa;padding:2px 6px;line-height:1" title="Effacer">✕</button>`:''}
+  const q=normQ(recipeSearch);
+  let filtered;
+  if(!q){
+    filtered=recipes;
+  } else {
+    const withMatch=recipes.map(r=>{
+      const titleMatch=normQ(r.name).includes(q);
+      const ingMatch=r.ingredients.some(i=>normQ(i.name).includes(q));
+      if(!titleMatch&&!ingMatch)return null;
+      return {r,score:titleMatch?0:1};
+    }).filter(Boolean);
+    withMatch.sort((a,b)=>a.score-b.score);
+    filtered=withMatch.map(x=>x.r);
+  }
+
+  let html=`<div style="margin-bottom:1.25rem;position:relative">
+    <span style="position:absolute;left:18px;top:50%;transform:translateY(-50%);pointer-events:none;display:flex;align-items:center;z-index:1"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <input type="text" id="recipe-search" value="${escHtml(recipeSearch)}" placeholder="Rechercher une recette ou un ingrédient…" oninput="recipeSearch=this.value;renderRecettes()">
+    ${recipeSearch?`<button onclick="recipeSearch='';renderRecettes()" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:17px;color:#C7C7CC;padding:2px;line-height:1;border-radius:50%" title="Effacer">✕</button>`:''}
   </div>
   <div class="row-header">
-    <span style="font-size:13px;color:#888">${filtered.length} recette${filtered.length!==1?'s':''}</span>
-    ${!showAddForm&&!editingId?`<button class="btn" onclick="startAdd()">+ Nouvelle recette</button>`:''}
+    <span style="font-size:13px;color:var(--muted);font-weight:600">${filtered.length} recette${filtered.length!==1?'s':''}</span>
+    ${!showAddForm&&!editingId?`<button class="btn-primary" onclick="startAdd()">+ Nouvelle recette</button>`:''}
   </div>`;
+
   if(showAddForm&&!editingId)html+=renderForm(null);
   if(!filtered.length&&!showAddForm)html+=`<div class="empty"><span class="icon">📋</span>${recipeSearch?'Aucune recette trouvée.':'Aucune recette.'}</div>`;
+
   filtered.forEach(r=>{
     if(editingId===r.id){html+=renderForm(r);return;}
     const isExpanded=expandedRecipeId===r.id;
+    const hasImg=!!(r.image);
     const ingStr=r.ingredients.map(i=>i.name+(i.quantity?` (${i.quantity}${i.unit?' '+i.unit:''})`:'')  ).join(', ');
     const delBtn=pendingDelete===r.id
       ?`<button class="btn-confirm" onclick="event.stopPropagation();confirmDel('${r.id}')">Confirmer ?</button>`
-      :`<button class="btn-danger" onclick="event.stopPropagation();requestDel('${r.id}')">🗑</button>`;
+      :`<button class="btn-danger" onclick="event.stopPropagation();requestDel('${r.id}')" title="Supprimer">🗑</button>`;
 
-    let detailHtml='';
-    if(isExpanded){
-      const ingList=r.ingredients.map(i=>{
-        const qtyStr=i.quantity?`${i.quantity}${i.unit?' '+i.unit:''}`:'';
-        return `<li><span class="ing-label">${escHtml(i.name)}</span>${qtyStr?`<span class="ing-qty">${escHtml(qtyStr)}</span>`:''}</li>`;
-      }).join('');
-
-      // ── Nutrition section ──
-      const nutri=r.nutrition;
-      const hasKey=!!localStorage.getItem('mp_anthropic_key');
-      const isLoadingNutri=nutritionLoadingId===r.id;
-      let nutriHtml='';
-      if(nutri){
-        const pp=nutri.par_portion||nutri; // backward compat
-        const portions=nutri.portions||1;
-        const kcalP=Math.round((pp.kcal||0));
-        const glucP=Math.round((pp.glucides||0));
-        const protP=Math.round((pp.proteines||0));
-        const lipP=Math.round((pp.lipides||0));
-        nutriHtml=`<div class="nutri-grid">
-          <div class="nutri-cell"><span class="nutri-val">${kcalP}</span><span class="nutri-label">kcal</span></div>
-          <div class="nutri-cell"><span class="nutri-val">${glucP}<span class="nutri-unit">g</span></span><span class="nutri-label">glucides</span></div>
-          <div class="nutri-cell"><span class="nutri-val">${protP}<span class="nutri-unit">g</span></span><span class="nutri-label">protéines</span></div>
-          <div class="nutri-cell"><span class="nutri-val">${lipP}<span class="nutri-unit">g</span></span><span class="nutri-label">lipides</span></div>
-        </div>
-        <div style="font-size:11px;color:#bbb;margin-top:6px;display:flex;justify-content:space-between">
-          <span>par portion · ${portions} portion${portions>1?'s':''} estimée${portions>1?'s':''}</span>
-          <span>${kcalP*portions} kcal total</span>
-        </div>`;
-      } else {
-        nutriHtml=`<div style="font-size:12px;color:#bbb;padding:4px 0">${hasKey?'Cliquez sur "Calculer" pour estimer via l’IA.':'Configurez une clé API Anthropic dans Paramètres → IA.'}</div>`;
-      }
-      const nutriSection=`<div class="nutri-section" onclick="event.stopPropagation()">
-        <div class="nutri-section-header">
-          <div class="notes-label" style="margin-bottom:0">🔢 Valeurs nutritionnelles</div>
-          ${hasKey?`<button onclick="event.stopPropagation();calculateNutrition('${r.id}')" class="btn" style="font-size:11px;padding:3px 10px;flex-shrink:0">${isLoadingNutri?'<span style=\"animation:pulse 1s infinite;display:inline-block\">…</span>':nutri?'↺ Recalculer':'✨ Calculer'}</button>`:''}
-        </div>
-        ${nutriHtml}
-      </div>`;
-
-      // ── AI panel for existing recipe ──
-      const isAIOpen=recipeAIPanelId===r.id;
-      const aiExistingSection=`<div class="ai-existing-section" onclick="event.stopPropagation()">
-        <div class="ai-existing-header" style="margin-bottom:${isAIOpen?'8px':'0'}">
-          <div class="notes-label" style="margin-bottom:0">✨ Générer avec l’IA</div>
-          <button onclick="event.stopPropagation();toggleRecipeAI('${r.id}')" class="btn" style="font-size:11px;padding:3px 10px">${isAIOpen?'Fermer ✕':'Ouvrir ↓'}</button>
-        </div>
-        ${isAIOpen?`<div class="recipe-ai-existing">
-          <div style="font-size:12px;color:#666;margin-bottom:8px">Laissez vide pour auto-générer la recette à partir des ingrédients, ou précisez une demande spécifique.</div>
-          <div class="ai-input-row">
-            <input type="text" id="recipe-ai-prompt-${r.id}" placeholder="Ex: version épicée, méthode Thermomix, sans gluten…" style="font-size:13px;border:1px solid #d0c8f0;border-radius:8px;padding:7px 10px;flex:1;outline:none;background:#fff" onkeydown="if(event.key==='Enter')callAIExistingRecipe('${r.id}')">
-            <button class="ai-btn" onclick="event.stopPropagation();callAIExistingRecipe('${r.id}')" id="recipe-ai-btn-${r.id}" ${!hasKey?'disabled title=\"Clé API requise\"':''}>Générer</button>
+    if(!isExpanded){
+      html+=`<div class="card" onclick="toggleExpand('${r.id}',event)">
+        <div class="rc-inner">
+          ${hasImg?`<img class="rc-thumb" src="${escHtml(r.image)}" alt="" loading="lazy">`:''}
+          <div class="rc-body${hasImg?'':' full'}">
+            <div class="rc-title">${escHtml(r.name)}</div>
+            <div style="margin-top:5px">${tagBadge(r.tag)}</div>
+            ${ingStr?`<div class="rc-ings">${escHtml(ingStr)}</div>`:''}
+            <div class="rc-actions">
+              ${r.notes?'<span title="Recette rédigée" style="font-size:11px;color:var(--green);background:var(--green-light);padding:3px 8px;border-radius:50px;font-weight:700">✏️ Rédigée</span>':''}
+              ${r.nutrition?'<span title="Nutrition calculée" style="font-size:11px;color:var(--muted);background:var(--bg);padding:3px 8px;border-radius:50px;font-weight:700">🔢</span>':''}
+              <button class="btn-icon" onclick="event.stopPropagation();startEdit('${r.id}')" title="Modifier">✏️</button>
+              ${delBtn}
+            </div>
           </div>
-          ${!hasKey?'<div class="ai-no-key" style="margin-top:8px;font-size:11px">⚠️ Clé API Anthropic requise dans Paramètres → IA.</div>':''}
-          <div id="recipe-ai-result-${r.id}" style="display:none;margin-top:8px"></div>
-        </div>`:''}
+        </div>
       </div>`;
+      return;
+    }
 
-      detailHtml=`<div class="recipe-detail">
-        ${r.ingredients.length?`<div class="section-title" style="margin-bottom:6px">Ingrédients</div><ul class="detail-ings">${ingList}</ul>`:''}
-        ${nutriSection}
-        ${aiExistingSection}
-        <div class="notes-label">📝 Recette & notes <span id="flash-${r.id}" class="saved-flash">✓ Enregistré</span></div>
+    // ── Expanded ──
+    const ingList=r.ingredients.map(i=>{
+      const qtyStr=i.quantity?`${i.quantity}${i.unit?' '+i.unit:''}`:'';
+      return `<li><span class="ing-label">${escHtml(i.name)}</span>${qtyStr?`<span class="ing-qty">${escHtml(qtyStr)}</span>`:''}</li>`;
+    }).join('');
+    const nutri=r.nutrition;
+    const hasKey=!!localStorage.getItem('mp_anthropic_key');
+    const isLoadingNutri=nutritionLoadingId===r.id;
+    let nutriHtml='';
+    if(nutri){
+      const pp=nutri.par_portion||nutri;
+      const portions=nutri.portions||1;
+      const kcalP=Math.round(pp.kcal||0),glucP=Math.round(pp.glucides||0),protP=Math.round(pp.proteines||0),lipP=Math.round(pp.lipides||0);
+      nutriHtml=`<div class="nutri-grid">
+        <div class="nutri-cell"><span class="nutri-val">${kcalP}</span><span class="nutri-label">kcal</span></div>
+        <div class="nutri-cell"><span class="nutri-val">${glucP}<span class="nutri-unit">g</span></span><span class="nutri-label">glucides</span></div>
+        <div class="nutri-cell"><span class="nutri-val">${protP}<span class="nutri-unit">g</span></span><span class="nutri-label">protéines</span></div>
+        <div class="nutri-cell"><span class="nutri-val">${lipP}<span class="nutri-unit">g</span></span><span class="nutri-label">lipides</span></div>
+      </div>
+      <div style="font-size:11px;color:#bbb;margin-top:6px;display:flex;justify-content:space-between">
+        <span>par portion · ${portions} portion${portions>1?'s':''}</span><span>${kcalP*portions} kcal total</span>
+      </div>`;
+    } else {
+      nutriHtml=`<div style="font-size:12px;color:#bbb;padding:4px 0">${hasKey?'Cliquez sur "Calculer" pour estimer via l\u2019IA.':'Configurez une clé API Anthropic dans Paramètres → IA.'}</div>`;
+    }
+    const isAIOpen=recipeAIPanelId===r.id;
+
+    html+=`<div class="card expanded" onclick="toggleExpand('${r.id}',event)">
+      <div class="rc-inner" style="cursor:default">
+        ${hasImg?`<img class="rc-thumb" src="${escHtml(r.image)}" alt="" loading="lazy">`:''}
+        <div class="rc-body${hasImg?'':' full'}" style="padding-bottom:6px">
+          <div class="rc-title">${escHtml(r.name)}</div>
+          <div style="margin-top:5px">${tagBadge(r.tag)}</div>
+          <div class="rc-actions">
+            <button class="btn-icon" onclick="event.stopPropagation();startEdit('${r.id}')" title="Modifier">✏️</button>
+            ${delBtn}
+          </div>
+        </div>
+      </div>
+      <div class="recipe-detail" onclick="event.stopPropagation()">
+        ${r.ingredients.length?`<div class="section-title" style="margin-bottom:6px;margin-top:4px">Ingrédients</div><ul class="detail-ings">${ingList}</ul>`:''}
+        <div class="nutri-section">
+          <div class="nutri-section-header">
+            <div class="notes-label" style="margin-bottom:0">🔢 Valeurs nutritionnelles</div>
+            ${hasKey?`<button onclick="event.stopPropagation();calculateNutrition('${r.id}')" class="btn" style="font-size:11px;padding:3px 10px;flex-shrink:0">${isLoadingNutri?'<span style=\\"animation:pulse 1s infinite;display:inline-block\\">…</span>':nutri?'↺ Recalculer':'✨ Calculer'}</button>`:''}
+          </div>
+          ${nutriHtml}
+        </div>
+        <div class="ai-existing-section">
+          <div class="ai-existing-header" style="margin-bottom:${isAIOpen?'8px':'0'}">
+            <div class="notes-label" style="margin-bottom:0">✨ Générer avec l'IA</div>
+            <button onclick="event.stopPropagation();toggleRecipeAI('${r.id}')" class="btn" style="font-size:11px;padding:3px 10px">${isAIOpen?'Fermer ✕':'Ouvrir ↓'}</button>
+          </div>
+          ${isAIOpen?`<div class="recipe-ai-existing">
+            <div style="font-size:12px;color:#666;margin-bottom:8px">Laissez vide pour auto-générer, ou précisez une demande.</div>
+            <div class="ai-input-row">
+              <input type="text" id="recipe-ai-prompt-${r.id}" placeholder="Ex: version épicée, méthode Thermomix…" style="font-size:13px;border:1px solid #d0c8f0;border-radius:8px;padding:7px 10px;flex:1;outline:none;background:#fff" onkeydown="if(event.key==='Enter')callAIExistingRecipe('${r.id}')">
+              <button class="ai-btn" onclick="event.stopPropagation();callAIExistingRecipe('${r.id}')" id="recipe-ai-btn-${r.id}" ${!hasKey?'disabled title=\\"Clé API requise\\"':''}>Générer</button>
+            </div>
+            ${!hasKey?'<div class="ai-no-key" style="margin-top:8px;font-size:11px">⚠️ Clé API Anthropic requise dans Paramètres → IA.</div>':''}
+            <div id="recipe-ai-result-${r.id}" style="display:none;margin-top:8px"></div>
+          </div>`:''}
+        </div>
+        <div class="notes-label">📝 Recette &amp; notes <span id="flash-${r.id}" class="saved-flash">✓ Enregistré</span></div>
         <textarea id="notes-${r.id}" class="recipe-notes" placeholder="Écrivez ici les étapes de préparation, astuces, temps de cuisson…" onblur="saveNotes('${r.id}')" onclick="event.stopPropagation()" oninput="autoGrowNotes(this)">${escHtml(r.notes||'')}</textarea>
         <div class="notes-resize-bar" onclick="event.stopPropagation()">
           <button class="notes-resize-btn" onclick="resizeNotes('notes-${r.id}',-160)" title="Réduire">−</button>
           <button class="notes-resize-btn" onclick="resizeNotes('notes-${r.id}',160)" title="Agrandir">+</button>
         </div>
-      </div>`;
-    }
-
-    html+=`<div class="card ${isExpanded?'expanded':''}" onclick="toggleExpand('${r.id}',event)">
-      <div class="recipe-header">
-        <span class="name">${escHtml(r.name)}</span>${tagBadge(r.tag)}
-        ${r.notes?'<span title="Recette rédigée" style="font-size:14px;color:#27ae60">✏️</span>':''}
-        ${r.nutrition?'<span title="Valeurs nutritionnelles disponibles" style="font-size:13px;color:#888">🔢</span>':''}
-        <button class="btn-icon" onclick="event.stopPropagation();startEdit('${r.id}')">✏️</button>${delBtn}
       </div>
-      ${!isExpanded&&ingStr?`<div class="recipe-ings">${escHtml(ingStr)}</div>`:''}
-      ${detailHtml}
     </div>`;
   });
   document.getElementById('view-recettes').innerHTML=html;
   document.querySelectorAll('textarea.recipe-notes').forEach(ta=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});
   if(hadFocus){const ns=document.getElementById('recipe-search');if(ns){ns.focus();ns.setSelectionRange(selStart,selEnd);}}
 }
-
 function renderForm(r){
   const isEdit=!!r;
   const ings=isEdit?r.ingredients:[];
@@ -1108,16 +1311,38 @@ async function calculateNutrition(id){
   nutritionLoadingId=null;renderRecettes();
 }
 
+function saveQtyAdjust(){localStorage.setItem('mp_qty_adjust',JSON.stringify(qtyAdjust));}
+function getQtyStep(qty,unit){
+  if(unit==='g')return 50;
+  if(unit==='ml')return 50;
+  if(unit==='kg'||unit==='l')return 0.5;
+  if(unit==='cl')return 5;
+  return 1;
+}
+function adjustQty(key,delta,maxQty){
+  if(qtyAdjust[key]===undefined)qtyAdjust[key]=0;
+  qtyAdjust[key]+=delta;
+  qtyAdjust[key]=Math.max(0,Math.min(maxQty,qtyAdjust[key]));
+  if(qtyAdjust[key]===0)delete qtyAdjust[key];
+  saveQtyAdjust();
+  renderCourses();
+}
+function toggleWeekExpand(id,event){
+  event.stopPropagation();
+  expandedWeekId=expandedWeekId===id?null:id;
+  renderSemaine();
+}
 function requestDel(id){pendingDelete=id;render();setTimeout(()=>{if(pendingDelete===id){pendingDelete=null;render();}},3000);}
 function confirmDel(id){recipes=recipes.filter(r=>r.id!==id);week=week.filter(w=>w.recipeId!==id);pendingDelete=null;syncToFirestore();render();}
 
 // ── Render Semaine ────────────────────────────────────────────────────────────
 function renderSemaine(){
-  let html=`<div class="row-header" style="margin-bottom:1rem">
-    <span style="font-size:14px;color:#888">${week.length===0?'Sélectionnez vos plats de la semaine':`${week.length} plat${week.length>1?'s':''} sélectionné${week.length>1?'s':''}`}</span>
+  updateSubtitle();
+  let html=`<div class="row-header" style="margin-bottom:1.25rem">
+    <span style="font-size:14px;color:var(--muted);font-weight:600">${week.length===0?'Sélectionnez vos plats de la semaine':`${week.length} plat${week.length>1?'s':''} sélectionné${week.length>1?'s':''}`}</span>
     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-      <button class="btn" onclick="pickRandom()" style="font-size:12px;padding:4px 12px" title="Sélection aléatoire : 1 viande hachée, 1 poulet, 1 poisson, 1 divers, 1 légume, 1 sandwich">🎲 Aléatoire</button>
-      ${week.length>0?`<button class="btn" onclick="resetWeek()" style="font-size:12px;padding:4px 12px">↺ Réinitialiser</button>`:''}
+      <button class="btn" onclick="pickRandom()" style="font-size:12px;padding:6px 14px;border-radius:50px" title="Sélection aléatoire">🎲 Aléatoire</button>
+      ${week.length>0?`<button class="btn" onclick="resetWeek()" style="font-size:12px;padding:6px 14px;border-radius:50px">↺ Réinitialiser</button>`:''}
     </div>
   </div>`;
   if(!recipes.length){html+=`<div class="empty"><span class="icon">📅</span>Ajoutez d'abord des recettes.</div>`;document.getElementById('view-semaine').innerHTML=html;return;}
@@ -1129,12 +1354,21 @@ function renderSemaine(){
     grouped[t.id].forEach(r=>{
       const entry=week.find(w=>w.recipeId===r.id);const sel=!!entry;
       const multBtns=sel?[1,2,4,6].map(m=>`<button class="mult-btn ${entry.multiplier===m?'active':''}" onclick="event.stopPropagation();setMult('${r.id}',${m})">×${m}</button>`).join(''):'';
-      html+=`<div class="week-item ${sel?'selected':''}" onclick="toggleWeek('${r.id}')">
+      const isWExp=expandedWeekId===r.id&&sel;
+      html+=`<div class="week-item ${sel?'selected':''}" style="${sel&&isWExp?'border-radius:16px 16px 0 0;':''}" onclick="toggleWeek('${r.id}')">
         <div class="checkbox ${sel?'checked':''}"></div>
-        <span class="wname" style="font-weight:${sel?'500':'400'}">${escHtml(r.name)}</span>
-        <span class="wingr">${r.ingredients.length} ingr.</span>
-        ${sel?`<div class="mult-btns" onclick="event.stopPropagation()">${multBtns}</div>`:''}
+        <span class="wname" style="font-weight:${sel?'600':'400'}">${escHtml(r.name)}</span>
+        ${sel?`<div class="mult-btns" onclick="event.stopPropagation()">${multBtns}</div>`:`<span class="wingr">${r.ingredients.length} ingr.</span>`}
+        ${sel?`<button class="week-expand-btn ${isWExp?'open':''}" onclick="toggleWeekExpand('${r.id}',event)" title="Voir la recette">›</button>`:''}
       </div>`;
+      if(isWExp){
+        const ingLines=r.ingredients.map(i=>`<li><span>${escHtml(i.name)}</span><span style="color:var(--muted);font-size:12px">${i.quantity?escHtml(String(i.quantity)+(i.unit?' '+i.unit:'')):'—'}</span></li>`).join('');
+        html+=`<div class="week-detail">
+          ${tagBadge(r.tag)}
+          ${r.ingredients.length?`<div style="margin-top:10px;margin-bottom:2px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Ingrédients</div><ul class="week-detail-ings">${ingLines}</ul>`:''}
+          ${r.notes?`<div style="margin-top:8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Recette</div><div style="font-size:12.5px;color:#555;line-height:1.65;margin-top:4px;white-space:pre-wrap;max-height:220px;overflow-y:auto">${escHtml(r.notes)}</div>`:''}
+        </div>`;
+      }
     });
     html+=`</div>`;
   });
@@ -1195,6 +1429,7 @@ function computeShoppingList(){
   });return res;
 }
 function renderCourses(){
+  updateSubtitle();
   if(!week.length && !extraItems.length){document.getElementById('view-courses').innerHTML=`<div class="empty"><span class="icon">🛒</span>Sélectionnez des plats dans "Ma semaine" ou ajoutez des articles dans "Extras" pour générer la liste de courses.</div>`;return;}
   const list=computeShoppingList();
   const selRecipes=week.map(w=>{const r=recipes.find(x=>x.id===w.recipeId);return r?{...r,mult:w.multiplier}:null;}).filter(Boolean);
@@ -1209,7 +1444,7 @@ function renderCourses(){
   html+=`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     <div class="shop-meta"><span>${doneCount}/${total} articles cochés</span>
     <div style="display:flex;gap:6px">
-      ${doneCount>0?`<button class="btn" onclick="clearChecked()" style="font-size:12px;padding:4px 10px">↺ Tout décocher</button>`:''}
+      ${doneCount>0?`<button class="btn" onclick="clearChecked()" style="font-size:12px;padding:5px 12px;border-radius:50px">↺ Tout décocher</button>`:''}
     </div></div>`;
 
   // Merge extra items into categories
@@ -1228,13 +1463,28 @@ function renderCourses(){
     if(items){
       Object.entries(items).forEach(([key,item])=>{
         const ckey=cat.id+':'+key;const isDone=!!checked[ckey];
-        let qtyStr='';
-        if(item.hasQty&&item.quantity>0){const q=item.quantity%1===0?item.quantity:parseFloat(item.quantity.toFixed(2));qtyStr=`${q}${item.unit?' '+item.unit:''}`;}
-        else if(!item.hasQty&&item.count>1)qtyStr=`×${item.count}`;
-        html+=`<div class="shop-item ${isDone?'done':''}" onclick="toggleCheck(this.dataset.key)" data-key="${escHtml(ckey)}">
-          <div class="circle-check ${isDone?'checked':''}"></div>
+        const adj=qtyAdjust[ckey]||0;
+        let qtyStr='',adjQtyStr='';let isAllUsed=false;
+        if(item.hasQty&&item.quantity>0){
+          const q=item.quantity%1===0?item.quantity:parseFloat(item.quantity.toFixed(2));
+          const remaining=Math.max(0,item.quantity-adj);
+          const remD=remaining%1===0?remaining:parseFloat(remaining.toFixed(2));
+          qtyStr=`${q}${item.unit?' '+item.unit:''}`;
+          adjQtyStr=`${remD}${item.unit?' '+item.unit:''}`;
+          isAllUsed=remaining<=0;
+        } else if(!item.hasQty&&item.count>1){qtyStr=`×${item.count}`;adjQtyStr=qtyStr;}
+        const step=item.hasQty?getQtyStep(item.quantity,item.unit):1;
+        const maxAdj=item.hasQty?item.quantity:0;
+        const isReduced=adj>0&&!isAllUsed;
+        const showQty=item.hasQty&&adj>0?adjQtyStr:qtyStr;
+        html+=`<div class="shop-item ${isDone||isAllUsed?'done':''}" onclick="toggleCheck(this.dataset.key)" data-key="${escHtml(ckey)}">
+          <div class="circle-check ${isDone||isAllUsed?'checked':''}"></div>
           <span class="sname">${escHtml(item.displayName)}</span>
-          ${qtyStr?`<span class="sqty">${escHtml(qtyStr)}</span>`:''}
+          ${qtyStr?`<span class="sqty" style="${isReduced?'color:var(--green);font-weight:800;':''}${isAllUsed?'text-decoration:line-through;':''}">${escHtml(showQty)}</span>`:''}
+          ${item.hasQty&&qtyStr?`<div class="qty-adj" onclick="event.stopPropagation()">
+            <button class="qty-adj-btn" onclick="adjustQty('${escHtml(ckey)}',${step},${maxAdj})">&#8722;</button>
+    	 		        <button class="qty-adj-btn" onclick="adjustQty('${escHtml(ckey)}',-${step},${maxAdj})">+</button>
+          </div>`:''}
         </div>`;
       });
     }
@@ -1455,6 +1705,7 @@ function applyAIRecette(text){
 }
 
 function renderSettings(){
+  updateSubtitle();
   const isLocal=storageMode==='local';
   const isFirebase=storageMode==='firebase';
   const cfg=loadCfg()||{};
@@ -1521,7 +1772,7 @@ function renderSettings(){
       ${pendingReset?
         `<button class="btn-confirm" onclick="confirmReset()">⚠️ Confirmer la suppression ?</button>
          <button class="btn" onclick="cancelReset()">Annuler</button>`
-        :`<button class="btn" style="color:#c0392b;border-color:#f5c6c6" onclick="requestReset()">Réinitialiser toutes les données</button>`
+        :`<button class="btn" style="color:#c0392b;border-color:#FADADD;background:#FFF8F8;border-radius:50px" onclick="requestReset()">Réinitialiser toutes les données</button>`
       }
     </div>
   </div>`;
@@ -1582,6 +1833,7 @@ async function saveFirebaseSettings(){
 
 // ── Render Extras ─────────────────────────────────────────────────────────────
 function renderExtras(){
+  updateSubtitle();
   const ingNames=allIngredientNames();
   const datalist=`<datalist id="extra-ing-names">${ingNames.map(n=>`<option value="${escHtml(n)}">`).join('')}</datalist>`;
   const catOpts=CAT_INGR.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
@@ -1602,8 +1854,8 @@ function renderExtras(){
       <select id="extra-unit" class="unit">${unitOpts}</select>
       <select id="extra-cat" class="cat">${catOpts}</select>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:8px">
-      <button class="btn-primary" onclick="addExtraItem()" style="font-size:13px">+ Ajouter aux courses</button>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+      <button class="btn-primary" onclick="addExtraItem()">+ Ajouter aux courses</button>
     </div>
   </div>`;
 
@@ -1611,7 +1863,7 @@ function renderExtras(){
     const pct=total>0?Math.round(doneCount/total*100):0;
     html+=`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     <div class="shop-meta"><span>${doneCount}/${total} articles cochés</span>
-    ${doneCount>0?`<button class="btn" onclick="clearExtraChecked()" style="font-size:12px;padding:4px 10px">↺ Tout décocher</button>`:''}
+    ${doneCount>0?`<button class="btn" onclick="clearExtraChecked()" style="font-size:12px;padding:5px 12px;border-radius:50px">↺ Tout décocher</button>`:''}
     </div>`;
 
     // Group by category
