@@ -1399,7 +1399,7 @@ function renderSemaine(){
 }
 function toggleWeek(id){const e=week.find(w=>w.recipeId===id);if(e)week=week.filter(w=>w.recipeId!==id);else week.push({recipeId:id,multiplier:1});syncToFirestore();render();}
 function setMult(id,m){week=week.map(w=>w.recipeId===id?{...w,multiplier:m}:w);syncToFirestore();render();}
-function resetWeek(){week=[];checked={};saveChecked();extraItems=extraItems.map(i=>({...i,checked:false}));saveExtraItems();syncToFirestore();render();}
+function resetWeek(){week=[];checked={};qtyAdjust={};saveChecked();extraItems=extraItems.map(i=>({...i,checked:false}));saveExtraItems();syncToFirestore();render();}
 function pickRandom(){
   const cats=['viande-hachee','poulet','poisson','divers','legumes-salades','sandwich'];
   const prevIds=week.map(w=>w.recipeId);
